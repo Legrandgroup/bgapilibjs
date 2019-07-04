@@ -156,31 +156,31 @@ function resetParser() {
 function parseIncoming(incomingBytes, callback) {
   let rxBuffer = Buffer.concat([bgapiRXBuffer, incomingBytes]);
   let skippedBytes = 0;
-  console.log('Current buffer: ' + rxBuffer.toString('hex'));
+  console.debug('Current buffer: ' + rxBuffer.toString('hex'));
   while (rxBuffer.length>0) {
     if (!validPacketStart(rxBuffer)) {
-      console.log('Desynchronized buffer');
+      console.warn('Desynchronized buffer');
       callback && callback(new Error("Desynchronized buffer"), null);
       rxBuffer = rxBuffer.slice(1);
       skippedBytes++;
     }
     else {
       if (skippedBytes > 0) {
-        console.log('Note: ' + skippedBytes + ' byte(s) skipped at head of incoming buffer');
+        console.warn('Note: ' + skippedBytes + ' byte(s) skipped at head of incoming buffer');
       }
       let result = decodeBuffer(rxBuffer);
       if (result === undefined) {
-        console.log('Failure decoding buffer ' + rxBuffer.toString('hex') + '. Discarding the whole buffer');
+        console.error('Failure decoding buffer ' + rxBuffer.toString('hex') + '. Discarding the whole buffer');
         rxBuffer = Buffer.alloc(0);
       }
       else {
         if (!(result.needsMoreBytes === undefined) && result.needsMoreBytes > 0) {
-          console.log('Missing at least ' + result.needsMoreBytes + ' more byte(s) to decode');
+          console.debug('Missing at least ' + result.needsMoreBytes + ' more byte(s) to decode');
           break;
         }
         else {
           if (result.eatenBytes <= 0) {
-            console.log('Error: no byte processed at the beginning of buffer ' + rxBuffer.toString('hex') + '. Discarding the whole buffer');
+            console.error('Error: no byte processed at the beginning of buffer ' + rxBuffer.toString('hex') + '. Discarding the whole buffer');
             rxBuffer = Buffer.alloc(0);
           }
           else {
@@ -191,7 +191,7 @@ function parseIncoming(incomingBytes, callback) {
     }
   }
   if (rxBuffer.length != 0)
-    console.log(rxBuffer.length + ' trailing byte(s) remained undecoded');
+    console.warn(rxBuffer.length + ' trailing byte(s) remained undecoded');
   
   bgapiRXBuffer = rxBuffer;
 }
