@@ -107,9 +107,17 @@ function getCommand(commandName) {
 
 function decodeResponse(buffer) {
   console.log('Decoding response packet ' + buffer.toString('hex'));
-  let resultEatenBytes = buffer.length;
-  let resultDecodedPacket = { };
-  let result = { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket };
+  let bufferLength = buffer.length;
+  let resultNeedsMoreBytes = 0;
+  let resultEatenBytes = 0;
+  let resultDecodedPacket = {};
+  if (bufferLength<4) {
+    resultNeedsMoreBytes = 4 - bufferLength;
+  }
+  else {
+    resultEatenBytes = buffer.length;
+  }
+  let result = { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket, needsMoreBytes: resultNeedsMoreBytes };
   console.log('Returning:');
   console.log(result);
   return result;
@@ -151,7 +159,8 @@ function parseIncoming(incomingBytes, callback) {
   console.log('Current buffer: ' + rxBuffer.toString('hex'));
   while (rxBuffer.length>0) {
     if (!validPacketStart(rxBuffer)) {
-      console.log('Not enough data to decode buffer or desynchronized buffer');
+      console.log('Desynchronized buffer');
+      callback && callback(new Error("Desynchronized buffer"), null);
       rxBuffer = rxBuffer.slice(1);
       skippedBytes++;
     }
@@ -165,18 +174,24 @@ function parseIncoming(incomingBytes, callback) {
         rxBuffer = Buffer.alloc(0);
       }
       else {
-        if (result.eatenBytes <= 0) {
-          console.log('Error: no byte processed at the beginning of buffer ' + rxBuffer.toString('hex') + '. Discarding the whole buffer');
-          rxBuffer = Buffer.alloc(0);
+        if (!(result.needsMoreBytes === undefined) && result.needsMoreBytes > 0) {
+          console.log('Missing at least ' + result.needsMoreBytes + ' more byte(s) to decode');
+          break;
         }
         else {
-          rxBuffer = rxBuffer.slice(result.eatenBytes); /* Cut the first bytes that have now been decoded */
+          if (result.eatenBytes <= 0) {
+            console.log('Error: no byte processed at the beginning of buffer ' + rxBuffer.toString('hex') + '. Discarding the whole buffer');
+            rxBuffer = Buffer.alloc(0);
+          }
+          else {
+            rxBuffer = rxBuffer.slice(result.eatenBytes); /* Cut the first bytes that have now been decoded */
+          }
         }
       }
     }
   }
   if (rxBuffer.length != 0)
-    console.log(rxBuffer.length + ' trailing bytes remained undecoded');
+    console.log(rxBuffer.length + ' trailing byte(s) remained undecoded');
   
   bgapiRXBuffer = rxBuffer;
 }
