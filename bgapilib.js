@@ -120,6 +120,14 @@ Responses[Classes.BluetoothMeshGenericClientModel] = {
   }
 }
 
+Responses[Classes.BluetoothMeshGenericServerModel] = {
+  0x04 : {  /* This is the message id */
+    minimumPayloadLength : 2,
+    name : 'mesh_generic_server_init',
+    handler : rsp_generic_16bit_result_code,
+  }
+}
+
 /**
  * @brief List of known event messages and associated handlers
 **/
