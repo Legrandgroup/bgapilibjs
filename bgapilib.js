@@ -40,6 +40,9 @@ function namePrefixToClassId(name) {
   return undefined;
 }
 
+/**
+ * @brief List of known command messages, expected encoding, and specific handlers if any
+**/
 const Commands = {
   'system_reset' : {
     minimumPayloadLength : 1,
@@ -55,6 +58,32 @@ const Commands = {
   'mesh_node_init' : { id : 0x00 },
   'mesh_generic_client_init' : { id : 0x04 },
   'mesh_generic_server_init' : { id : 0x04 },
+}
+
+function system_get_bt_address(buffer) {
+  console.debug('Got arg:');
+  console.debug(buffer);
+  console.log('system_get_bt_address ' + buffer.toString('hex'));
+  return 'test_result';
+}
+
+/**
+ * @brief List of known response messages and associated handlers
+**/
+const Responses = {
+  0x01 : {  /* Classes.System == 0x01. All responses in system class go here */
+    0x03 : {  /* This is the message id */
+      minimumPayloadLength : 6,
+      name : 'system_get_bt_address',
+      handler : system_get_bt_address,
+    }
+  }
+}
+
+/**
+ * @brief List of known event messages and associated handlers
+**/
+const Events = {
 }
 
 /**
