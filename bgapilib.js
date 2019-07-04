@@ -173,7 +173,7 @@ function getCommand(commandName) {
         let payload = Commands[commandName].handler.apply(this, Array.prototype.slice.call(arguments, 1));
         message = Buffer.concat([header, payload])
       }
-      console.log('Packet is ' + message.toString('hex'));
+      if (DEBUG) console.debug('Packet is ' + message.toString('hex'));
       return message;
     }
     else {
@@ -218,24 +218,40 @@ function decodeResponse(buffer) {
         else {
           let responseName = Responses[messageClass][messageId].name;
           if (Responses[messageClass][messageId].handler === undefined) {
-            console.log('No handler for response message ' + responseName);
+            console.error('No handler for response message ' + responseName);
           }
           else {
-            console.debug('Will invoke handler for ' + Responses[messageClass][messageId].name + ' with args:');
-            console.debug(buffer.slice(4));
+            let handlerName = Responses[messageClass][messageId].name;
+            if (DEBUG) {
+              console.debug('Will invoke handler for ' + handlerName + ' with args:');
+              console.debug(buffer.slice(4));
+            }
             let handlerResult = Responses[messageClass][messageId].handler(buffer.slice(4));  /* Invoke handler, removing the 4 header bytes */
             if (handlerResult) {
-              if (!(handlerResult.eatenBytes === undefined))
-                resultEatenBytes += handlerResult.eatenBytes; /* Take bytes eaten by handler into account */
-              if (!(handlerResult.needsMoreBytes === undefined))
-                resultNeedsMoreBytes += handlerResult.needsMoreBytes; /* Take bytes needed by handler to complete decoding into account */
               if (handlerResult.eatenBytes === undefined &&
                   handlerResult.needsMoreBytes === undefined &&
                   handlerResult.decodedPacket === undefined) {  /* Simple handlers can avoid providing eatenBytes or needsMoreBytes, nor decodedPacket */
                 /* In such case, they directly return the decodedPacket */
+                console.warn('Unstructured response from handler assumed to be the raw result:');
+                console.warn(handlerResult);
                 resultDecodedPacket = handlerResult;
               }
-              else {
+              else {  /* We have at least one attribute set among .eatenBytes, .needsMoreBytes or .decodedPacket */
+                if (DEBUG) {
+                  console.log('Handler ' + handlerName + ' was run, result is:');
+                  console.log(handlerResult);
+                }
+                
+                if (!(handlerResult.eatenBytes === undefined))
+                  resultEatenBytes += handlerResult.eatenBytes; /* Take bytes eaten by handler into account */
+                else
+                  console.warn('No .eatenBytes attribute was provided by handler ' + handlerName);
+                
+                if (!(handlerResult.needsMoreBytes === undefined))
+                  resultNeedsMoreBytes += handlerResult.needsMoreBytes; /* Take bytes needed by handler to complete decoding into account */
+                else
+                  console.warn('No .needsMoreBytes attribute was provided by handler ' + handlerName);
+                
                 resultDecodedPacket = handlerResult.decodedPacket;  /* For full feedback handlers, extract only the decodedPacket field */
               }
             }
@@ -245,8 +261,10 @@ function decodeResponse(buffer) {
     }
   }
   let result = { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket, needsMoreBytes: resultNeedsMoreBytes };
-  console.log('Returning:');
-  console.log(result);
+  if (DEBUG) {
+    console.debug('Returning:');
+    console.debug(result);
+  }
   return result;
 }
 
@@ -266,14 +284,16 @@ function decodeEvent(buffer) {
     resultNeedsMoreBytes = 4 - bufferLength;
   }
   else {
-    resultEatenBytes += 4;
     if (buffer[0] != MessageTypes.Event) {
       throw new Error("Invalid event buffer: " + buffer.toString('hex'));
     }
+    resultEatenBytes += 4;
   }
   let result = { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket, needsMoreBytes: resultNeedsMoreBytes };
-  console.log('Returning:');
-  console.log(result);
+  if (DEBUG) {
+    console.log('Returning:');
+    console.log(result);
+  }
   return result;
 }
 
@@ -315,11 +335,11 @@ function resetParser() {
 function parseIncoming(incomingBytes, callback) {
   let rxBuffer = Buffer.concat([bgapiRXBuffer, incomingBytes]);
   let skippedBytes = 0;
-  console.debug('Current buffer: ' + rxBuffer.toString('hex'));
+  if (DEBUG) console.debug('Entering parseIncoming() with current RX buffer: ' + rxBuffer.toString('hex'));
   while (rxBuffer.length>0) {
     if (!validPacketStart(rxBuffer)) {
       console.warn('Desynchronized buffer');
-      callback && callback(new Error("Desynchronized buffer"), null);
+      callback && callback(new Error("Desynchronized buffer"), null, 0);
       rxBuffer = rxBuffer.slice(1);
       skippedBytes++;
     }
@@ -334,7 +354,8 @@ function parseIncoming(incomingBytes, callback) {
       }
       else {
         if (!(result.needsMoreBytes === undefined) && result.needsMoreBytes > 0) {
-          console.debug('Missing at least ' + result.needsMoreBytes + ' more byte(s) to decode');
+          console.log('Missing at least ' + result.needsMoreBytes + ' more byte(s) to decode');
+          callback && callback(null, null, result.needsMoreBytes);
           break;
         }
         else {
@@ -342,8 +363,14 @@ function parseIncoming(incomingBytes, callback) {
             console.error('Error: no byte processed at the beginning of buffer ' + rxBuffer.toString('hex') + '. Discarding the whole buffer');
             rxBuffer = Buffer.alloc(0);
           }
-          else {
+          else {  /* Message has been parsed (eatenBytes>0) */
+            callback && callback(null, result.decodedPacket, 0);
+            if (DEBUG) {
+              console.log(result.eatenBytes + ' bytes used by handler, removing them from the head of the current buffer');
+              console.log('Buffer was: ' + rxBuffer.toString('hex'));
+            }
             rxBuffer = rxBuffer.slice(result.eatenBytes); /* Cut the first bytes that have now been decoded */
+            if (DEBUG) console.log('Buffer is now: ' + rxBuffer.toString('hex'));
           }
         }
       }
