@@ -1,0 +1,19 @@
+{
+  "name": "bgapilib",
+  "version": "0.0.1",
+  "description": "A Node Library for communicating using the BGAPI serial protocol",
+  "main": "bgapilib.js",
+  "scripts": {
+    "test": "test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Legrandgroup/bgapilibjs.git"
+  },
+  "author": "Lionel AINS",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Legrandgroup/bgapilibjs/issues"
+  },
+  "homepage": "https://github.com/Legrandgroup/bgapilibjs#readme"
+}
