@@ -42,11 +42,18 @@ function namePrefixToClassId(name) {
 
 /**
  * @brief List of known command messages, expected encoding, and specific handlers if any
+ *
+ * Keys are the command official name as a string (taken from the BGAPI spec, but without the 'cmd_' prefix) (ie: cmd_system_reset is called 'system_reset')
+ * In each entry for a specific key, we will store a object describing the command:
+ * - Attribute id is mandatory and contains the 1-byte command ID (taken from the BGAPI spec, aka method)
+ * - Attribute minimumPayloadLength contains the expected minimumPayloadLength for this command (aka lolen). This will be assumed to be 0 if not provided
+ * - Attrivute classId contains the class ID for this command (taken from the BGAPI spec, aka class). If not provided, it will be guessed from the prefix of command name using PrefixToClass above
+ * - Attribute handler points to a function that will process and encode the command arguments, it must return a Buffer object containing the added payload of the command (excluding the fixed 4 BGAPI header bytes)
 **/
 const Commands = {
   'system_reset' : {
-    minimumPayloadLength : 1,
     id : 0x00,
+    minimumPayloadLength : 1,
     handler : function(dfu) {
         if (dfu<0 && dfu>2)
             throw new Error("Invalid dfu value: " + dfu);
