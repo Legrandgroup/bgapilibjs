@@ -138,6 +138,13 @@ function validPacketStart(buffer) {
           buffer[0] == MessageTypes.Event); /* Found the start of a message */
 }
 
+/**
+ * @brief Reset the BGAPI decoding state machine
+**/
+function resetParser() {
+  bgapiRXBuffer = Buffer.alloc(0);
+}
+
 function parseIncoming(incomingBytes, callback) {
   let rxBuffer = Buffer.concat([bgapiRXBuffer, incomingBytes]);
   let skippedBytes = 0;
@@ -174,5 +181,6 @@ function parseIncoming(incomingBytes, callback) {
   bgapiRXBuffer = rxBuffer;
 }
 
+module.exports.resetParser = resetParser;
 module.exports.getCommand = getCommand;
 module.exports.parseIncoming = parseIncoming;
