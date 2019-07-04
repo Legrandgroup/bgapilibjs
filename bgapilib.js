@@ -332,31 +332,51 @@ function resetParser() {
   bgapiRXBuffer = Buffer.alloc(0);
 }
 
+/**
+ * @brief Add incoming bytes to the receiving buffer and try to decode as many messages as possible inside the current buffer
+ *
+ * @param incomingBytes A Buffer of new incoming bytes
+ * @param callback A function with 3 arguments: function(err, packets, nbMoreBytesNeeded)
+ *        err Will be an Error message if decoding failed (desynchronized buffer of undecodable content), or null if there was no error
+ *        packets will be an array of successfully decoded packets, [] if there is no proper packet to decode (yet, and in this case, nbMoreBytesNeeded will be set) or null if errors were encountered
+ *        nbMoreBytesNeeded is an estimation of the minimum additional bytes needed to properly decode the buffer
+ *
+ * @note The callback function may be invoked multiple times depending on how the process goes (often invoked several times on desynchronized buffer)
+**/
 function parseIncoming(incomingBytes, callback) {
   let rxBuffer = Buffer.concat([bgapiRXBuffer, incomingBytes]);
   let skippedBytes = 0;
+  let goodDecode = false;
   if (DEBUG) console.debug('Entering parseIncoming() with current RX buffer: ' + rxBuffer.toString('hex'));
   while (rxBuffer.length>0) {
     if (!validPacketStart(rxBuffer)) {
-      console.warn('Desynchronized buffer');
+      if (goodDecode) { /* We are desynchronized, but we are right after a good decode... this is dodgy */
+        console.warn('Desynchronized buffer after a first good decode');
+        goodDecode=false;
+      }
+      else {
+        console.warn('Desynchronized buffer');
+      }
       callback && callback(new Error("Desynchronized buffer"), null, 0);
       rxBuffer = rxBuffer.slice(1);
       skippedBytes++;
     }
     else {
       if (skippedBytes > 0) {
-        console.warn('Note: ' + skippedBytes + ' byte(s) skipped at head of incoming buffer');
+        console.warn('Note: skipped ' + skippedBytes + ' byte(s) preceeding a suspected message started');
+        skippedBytes=0;
       }
       let result = decodeBuffer(rxBuffer);
       if (result === undefined) {
         console.error('Failure decoding buffer ' + rxBuffer.toString('hex') + '. Discarding the whole buffer');
         rxBuffer = Buffer.alloc(0);
+        callback && callback(new Error("Buffer decoding failure"), null, 0);
       }
       else {
         if (!(result.needsMoreBytes === undefined) && result.needsMoreBytes > 0) {
           console.log('Missing at least ' + result.needsMoreBytes + ' more byte(s) to decode');
           callback && callback(null, null, result.needsMoreBytes);
-          break;
+          break;  /* Don't continue looping... we don't have enough bytes! */
         }
         else {
           if (result.eatenBytes <= 0) {
@@ -364,6 +384,7 @@ function parseIncoming(incomingBytes, callback) {
             rxBuffer = Buffer.alloc(0);
           }
           else {  /* Message has been parsed (eatenBytes>0) */
+            goodDecode = true;
             callback && callback(null, result.decodedPacket, 0);
             if (DEBUG) {
               console.log(result.eatenBytes + ' bytes used by handler, removing them from the head of the current buffer');
