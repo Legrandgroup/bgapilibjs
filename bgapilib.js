@@ -27,6 +27,10 @@ const PrefixToClass = {
 var bgapiRXBuffer = Buffer.alloc(0);
 var bgapiRXBufferPos = 0;
 
+function convert2LeBytesTo16bitsInt(byte0, byte1) {
+  return byte0 | byte1<<8;
+}
+
 /**
  * @brief This function tries to guess a class ID based on the prefix of the command/response/event name provided as argument
  *
@@ -86,13 +90,15 @@ function rsp_system_get_bt_address(buffer) {
     else
       btAddressAsStr = bbStr; /* Only first byte */
   }
-  return {needsMoreBytes: 0, resultEatenBytes: 6, decodedPacket: { 'bd_addr': btAddressAsStr} };
+  return {needsMoreBytes: 0, eatenBytes: 6, decodedPacket: { 'bd_addr': btAddressAsStr} };
 }
 
 function rsp_generic_16bit_result_code(buffer) {
   /* We are sure to get at least 2 bytes here because minimumPayloadLength was set to 2 */
   let resultAsStr = '';
-  return {needsMoreBytes: 0, resultEatenBytes: 2, decodedPacket: { 'result': resultAsStr} };
+  let resultAsInt = convert2LeBytesTo16bitsInt(buffer[0], buffer[1]);
+  resultAsStr = bgapiErrors.errorCodes[resultAsInt];
+  return {needsMoreBytes: 0, eatenBytes: 2, decodedPacket: { 'result': resultAsStr} };
 }
 
 /**
