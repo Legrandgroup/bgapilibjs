@@ -80,21 +80,26 @@ function system_get_bt_address(buffer) {
 /**
  * @brief List of known response messages and associated handlers
 **/
-const Responses = {
-  0x01 : {  /* Classes.System == 0x01. All responses in system class go here */
-    0x03 : {  /* This is the message id */
-      minimumPayloadLength : 6,
-      name : 'system_get_bt_address',
-      handler : system_get_bt_address,
-    }
+var Responses = {};
+Responses[Classes.System] = {
+  0x03 : {  /* This is the message id */
+    minimumPayloadLength : 6,
+    name : 'system_get_bt_address',
+    handler : rsp_system_get_bt_address,
+  }
+}
+Responses[Classes.BluetoothMeshGenericClientModel] = {
+  0x04 : {  /* This is the message id */
+    minimumPayloadLength : 2,
+    name : 'mesh_generic_client_init',
+    handler : rsp_generic_16bit_result_code,
   }
 }
 
 /**
  * @brief List of known event messages and associated handlers
 **/
-const Events = {
-}
+var Events = {};
 
 /**
  * @brief This function creates a BGAPI byte buffer representing the command provided as first argument
