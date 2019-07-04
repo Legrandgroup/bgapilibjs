@@ -1,3 +1,6 @@
+
+require('./bgapi-errors.js');
+
 const MessageTypes = {
   Command : 0x20,
   Response : 0x20,
