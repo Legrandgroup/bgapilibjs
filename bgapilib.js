@@ -70,11 +70,28 @@ const Commands = {
   'mesh_generic_server_init' : { id : 0x04 },
 }
 
-function system_get_bt_address(buffer) {
-  console.debug('Got arg:');
-  console.debug(buffer);
-  console.log('system_get_bt_address ' + buffer.toString('hex'));
-  return 'test_result';
+function rsp_system_get_bt_address(buffer) {
+  /* We are sure to get at least 6 bytes here because minimumPayloadLength was set to 6 */
+  let btAddressAsStr = '';
+  for (const b of buffer.subarray(0, 6)) {
+    let bb = b & 0xFF;
+    let bbStr = '';
+    if (!(bb & 0xF0)) /* Will only convert to one digit */
+      bbStr = '0'; /* So we prefix with a 0 before */
+    bbStr += bb.toString(16);
+    console.log(bbStr);
+    if (btAddressAsStr)
+      btAddressAsStr = bbStr + ':' + btAddressAsStr;  /* Prepend the byte (because buffer is in the reverse order in BGAPI */
+    else
+      btAddressAsStr = bbStr; /* Only first byte */
+  }
+  return {needsMoreBytes: 0, resultEatenBytes: 6, decodedPacket: { 'bd_addr': btAddressAsStr} };
+}
+
+function rsp_generic_16bit_result_code(buffer) {
+  /* We are sure to get at least 2 bytes here because minimumPayloadLength was set to 2 */
+  let resultAsStr = '';
+  return {needsMoreBytes: 0, resultEatenBytes: 2, decodedPacket: { 'result': resultAsStr} };
 }
 
 /**
