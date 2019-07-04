@@ -121,7 +121,7 @@ function decodeResponse(buffer) {
     resultNeedsMoreBytes = 4 - bufferLength;
   }
   else {
-    resultEatenBytes = buffer.length;
+    resultEatenBytes += 4;
   }
   let result = { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket, needsMoreBytes: resultNeedsMoreBytes };
   console.log('Returning:');
@@ -137,9 +137,20 @@ function decodeResponse(buffer) {
 **/
 function decodeEvent(buffer) {
   console.log('Decoding event packet ' + buffer.toString('hex'));
-  let resultEatenBytes = buffer.length;
-  let resultDecodedPacket = { };
-  return { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket };
+  let bufferLength = buffer.length;
+  let resultNeedsMoreBytes = 0;
+  let resultEatenBytes = 0;
+  let resultDecodedPacket = {};
+  if (bufferLength<4) {
+    resultNeedsMoreBytes = 4 - bufferLength;
+  }
+  else {
+    resultEatenBytes += 4;
+  }
+  let result = { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket, needsMoreBytes: resultNeedsMoreBytes };
+  console.log('Returning:');
+  console.log(result);
+  return result;
 }
 
 /**
