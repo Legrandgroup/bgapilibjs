@@ -161,6 +161,48 @@ function decodeResponse(buffer) {
       throw new Error("Invalid response buffer: " + buffer.toString('hex'));
     }
     resultEatenBytes += 4;
+    let minimumPayloadLength = buffer[1];
+    let messageClass = buffer[2];
+    let messageId = buffer[3];
+    if (bufferLength < minimumPayloadLength + 4) {  /* Byte 3 tells us the minimum size of the packet, so we can already guess if we don't have enough bytes */
+      resultNeedsMoreBytes = 4 + minimumPayloadLength - bufferLength;
+    }
+    else {
+      if (Responses[messageClass] && Responses[messageClass][messageId]) {
+        let handlerMinimumPayloadLength = Responses[messageClass][messageId].handlerMinimumPayloadLength;
+        if (handlerMinimumPayloadLength === undefined)
+          handlerMinimumPayloadLength = 0;  /* If no minimum size was provided by handler, just assume 0 */
+        if (bufferLength < handlerMinimumPayloadLength + 4) { /* Redo the buffer length check, not on packet data but on minimum values provided by the handler */
+          resultNeedsMoreBytes = 4 + handlerMinimumPayloadLength - bufferLength;
+        }
+        else {
+          let responseName = Responses[messageClass][messageId].name;
+          if (Responses[messageClass][messageId].handler === undefined) {
+            console.log('No handler for response message ' + responseName);
+          }
+          else {
+            console.debug('Will invoke handler for ' + Responses[messageClass][messageId].name + ' with args:');
+            console.debug(buffer.slice(4));
+            let handlerResult = Responses[messageClass][messageId].handler(buffer.slice(4));  /* Invoke handler, removing the 4 header bytes */
+            if (handlerResult) {
+              if (!(handlerResult.eatenBytes === undefined))
+                resultEatenBytes += handlerResult.eatenBytes; /* Take bytes eaten by handler into account */
+              if (!(handlerResult.needsMoreBytes === undefined))
+                resultNeedsMoreBytes += handlerResult.needsMoreBytes; /* Take bytes needed by handler to complete decoding into account */
+              if (handlerResult.eatenBytes === undefined &&
+                  handlerResult.needsMoreBytes === undefined &&
+                  handlerResult.decodedPacket === undefined) {  /* Simple handlers can avoid providing eatenBytes or needsMoreBytes, nor decodedPacket */
+                /* In such case, they directly return the decodedPacket */
+                resultDecodedPacket = handlerResult;
+              }
+              else {
+                resultDecodedPacket = handlerResult.decodedPacket;  /* For full feedback handlers, extract only the decodedPacket field */
+              }
+            }
+          }
+        }
+      }
+    }
   }
   let result = { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket, needsMoreBytes: resultNeedsMoreBytes };
   console.log('Returning:');
