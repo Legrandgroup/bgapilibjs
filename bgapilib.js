@@ -121,6 +121,9 @@ function decodeResponse(buffer) {
     resultNeedsMoreBytes = 4 - bufferLength;
   }
   else {
+    if (buffer[0] != MessageTypes.Response) {
+      throw new Error("Invalid response buffer: " + buffer.toString('hex'));
+    }
     resultEatenBytes += 4;
   }
   let result = { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket, needsMoreBytes: resultNeedsMoreBytes };
@@ -146,6 +149,9 @@ function decodeEvent(buffer) {
   }
   else {
     resultEatenBytes += 4;
+    if (buffer[0] != MessageTypes.Event) {
+      throw new Error("Invalid event buffer: " + buffer.toString('hex'));
+    }
   }
   let result = { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket, needsMoreBytes: resultNeedsMoreBytes };
   console.log('Returning:');
