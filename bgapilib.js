@@ -1,5 +1,6 @@
+const bgapiErrors = require('./bgapi-errors.js');
 
-require('./bgapi-errors.js');
+const DEBUG = false;  /* Set this to true to enable verbose debug to console */
 
 const MessageTypes = {
   Command : 0x20,

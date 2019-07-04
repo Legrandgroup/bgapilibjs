@@ -186,4 +186,6 @@ const errorCodes = {
 0x0e0f: 'cannot_set',
 0x0e10: 'unspecified',
 0x0e11: 'invalid_binding',
-}
+};
+
+module.exports.errorCodes = errorCodes;
