@@ -1,5 +1,7 @@
 const MessageTypes = {
   Command : 0x20,
+  Response : 0x20,
+  Event : 0x0a,
 }
 
 const Classes = {
@@ -17,6 +19,9 @@ const PrefixToClass = {
   'mesh_generic_client' : Classes.BluetoothMeshGenericClientModel,
   'mesh_generic_server' : Classes.BluetoothMeshGenericServerModel,
 }
+
+var bgapiRXBuffer = Buffer.alloc(0);
+var bgapiRXBufferPos = 0;
 
 /**
  * @brief This function tries to guess a class ID based on the prefix of the command/response/event name provided as argument
@@ -100,4 +105,74 @@ function getCommand(commandName) {
     }
 }
 
+function decodeResponse(buffer) {
+  console.log('Decoding response packet ' + buffer.toString('hex'));
+  let resultEatenBytes = buffer.length;
+  let resultDecodedPacket = { };
+  let result = { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket };
+  console.log('Returning:');
+  console.log(result);
+  return result;
+}
+
+function decodeEvent(buffer) {
+  console.log('Decoding event packet ' + buffer.toString('hex'));
+  let resultEatenBytes = buffer.length;
+  let resultDecodedPacket = { };
+  return { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket };
+}
+
+function decodeBuffer(buffer) {
+  if (buffer[0] == MessageTypes.Response) {
+    return decodeResponse(buffer);
+  }
+  else if (buffer[0] == MessageTypes.Event) {
+    return decodeEvent(buffer);
+  }
+  else
+    return undefined;
+}
+
+function validPacketStart(buffer) {
+  return (buffer[0] == MessageTypes.Response ||
+          buffer[0] == MessageTypes.Event); /* Found the start of a message */
+}
+
+function parseIncoming(incomingBytes, callback) {
+  let rxBuffer = Buffer.concat([bgapiRXBuffer, incomingBytes]);
+  let skippedBytes = 0;
+  console.log('Current buffer: ' + rxBuffer.toString('hex'));
+  while (rxBuffer.length>0) {
+    if (!validPacketStart(rxBuffer)) {
+      console.log('Not enough data to decode buffer or desynchronized buffer');
+      rxBuffer = rxBuffer.slice(1);
+      skippedBytes++;
+    }
+    else {
+      if (skippedBytes > 0) {
+        console.log('Note: ' + skippedBytes + ' byte(s) skipped at head of incoming buffer');
+      }
+      let result = decodeBuffer(rxBuffer);
+      if (result === undefined) {
+        console.log('Failure decoding buffer ' + rxBuffer.toString('hex') + '. Discarding the whole buffer');
+        rxBuffer = Buffer.alloc(0);
+      }
+      else {
+        if (result.eatenBytes <= 0) {
+          console.log('Error: no byte processed at the beginning of buffer ' + rxBuffer.toString('hex') + '. Discarding the whole buffer');
+          rxBuffer = Buffer.alloc(0);
+        }
+        else {
+          rxBuffer = rxBuffer.slice(result.eatenBytes); /* Cut the first bytes that have now been decoded */
+        }
+      }
+    }
+  }
+  if (rxBuffer.length != 0)
+    console.log(rxBuffer.length + ' trailing bytes remained undecoded');
+  
+  bgapiRXBuffer = rxBuffer;
+}
+
 module.exports.getCommand = getCommand;
+module.exports.parseIncoming = parseIncoming;
