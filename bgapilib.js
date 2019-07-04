@@ -105,6 +105,12 @@ function getCommand(commandName) {
     }
 }
 
+/**
+ * @brief Decode a response buffer
+ *
+ * @param buffer The buffer to decode (possibly too short, or with trailing bytes)
+ * @return An object containing the result of the decoding process
+**/
 function decodeResponse(buffer) {
   console.log('Decoding response packet ' + buffer.toString('hex'));
   let bufferLength = buffer.length;
@@ -123,6 +129,12 @@ function decodeResponse(buffer) {
   return result;
 }
 
+/**
+ * @brief Decode an event buffer
+ *
+ * @param buffer The buffer to decode (possibly too short, or with trailing bytes)
+ * @return An object containing the result of the decoding process
+**/
 function decodeEvent(buffer) {
   console.log('Decoding event packet ' + buffer.toString('hex'));
   let resultEatenBytes = buffer.length;
@@ -130,6 +142,12 @@ function decodeEvent(buffer) {
   return { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket };
 }
 
+/**
+ * @brief Decode an incoming byte buffer
+ *
+ * @param buffer The buffer to decode (possibly too short, or with trailing bytes)
+ * @return An object containing the result of the decoding process or undefined if no decoding could be performed
+**/
 function decodeBuffer(buffer) {
   if (buffer[0] == MessageTypes.Response) {
     return decodeResponse(buffer);
@@ -141,6 +159,12 @@ function decodeBuffer(buffer) {
     return undefined;
 }
 
+/**
+ * @brief Check if a buffer starts with a valid response or event signature
+ *
+ * @param buffer The buffer to check
+ * @return true if the buffer starts with a valid signature
+**/
 function validPacketStart(buffer) {
   return (buffer[0] == MessageTypes.Response ||
           buffer[0] == MessageTypes.Event); /* Found the start of a message */
