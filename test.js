@@ -50,6 +50,7 @@ console.log('Testing parsing for concatenated system_get_bt_address responses...
 callbackExecuted = false;
 bgapi.resetParser();
 bgapi.parseIncoming(Buffer.from([0x00, 0x20, 0x06, 0x01, 0x03, 0x06, 0x05, 0xa4, 0x03, 0x02, 0x01, 0x20, 0x06, 0x01, 0x03, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01]), function(err, packets, nbMoreBytesNeeded) {
+        callbackExecuted = true;
         if (!err)
             console.log(packets);
     }
