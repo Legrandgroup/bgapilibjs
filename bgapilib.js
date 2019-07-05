@@ -140,7 +140,23 @@ function evt_system_boot(buffer) {
   if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
     buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
   console.log('evt_system_boot got a buffer: ' + buffer.toString('hex'));
-  //return { blabla: 1 };
+  let majorVersion = buffer.readUInt16LE(0);
+  let minorVersion = buffer.readUInt16LE(2);
+  let patchVersion = buffer.readUInt16LE(4);
+  let buildVersion = buffer.readUInt16LE(6);
+  let bootloaderVersion = buffer.readUInt32LE(8);
+  let hwType = buffer.readUInt16LE(12);
+  let versionHash = buffer.readUInt32LE(14);
+  let resultAsStr = {
+    'major': majorVersion,
+    'minor': minorVersion,
+    'patch': patchVersion,
+    'build': buildVersion,
+    'bootloader': bootloaderVersion,
+    'hw': hwType,
+    'hash': versionHash,
+  }
+  return {needsMoreBytes: 0, eatenBytes: 18, decodedPacket: { 'result': resultAsStr} };
 }
 
 /**
