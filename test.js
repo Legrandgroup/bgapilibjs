@@ -56,3 +56,16 @@ bgapi.parseIncoming(Buffer.from([0x00, 0x20, 0x06, 0x01, 0x03, 0x06, 0x05, 0xa4,
     }
 );
 assert(callbackExecuted, 'Expected a call to callback function');
+
+console.log('Testing cmd_system_reset emission and feedback event');
+callbackExecuted = false;
+bgapi.resetParser();
+packet = bgapi.getCommand('system_reset', 0);
+assert(packet.equals(Buffer.from([0x20, 0x01, 0x01, 0x01, 0x00])), 'Expected another payload for command cmd_system_reset. Got: ' + packet.toString('hex'));
+bgapi.parseIncoming(Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x02, 0x00, 0x0C, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]), function(err, packets, nbMoreBytesNeeded) {
+        callbackExecuted = true;
+        if (!err)
+            console.log(packets);
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');
