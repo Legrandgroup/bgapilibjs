@@ -27,10 +27,6 @@ const PrefixToClass = {
 var bgapiRXBuffer = Buffer.alloc(0);
 var bgapiRXBufferPos = 0;
 
-function convert2LeBytesTo16bitsInt(byte0, byte1) {
-  return byte0 | byte1<<8;
-}
-
 /**
  * @brief This function tries to guess a class ID based on the prefix of the command/response/event name provided as argument
  *
@@ -95,9 +91,7 @@ function rsp_system_get_bt_address(buffer) {
 
 function rsp_generic_16bit_result_code(buffer) {
   /* We are sure to get at least 2 bytes here because minimumPayloadLength was set to 2 */
-  let resultAsStr = '';
-  let resultAsInt = convert2LeBytesTo16bitsInt(buffer[0], buffer[1]);
-  resultAsStr = bgapiErrors.errorCodes[resultAsInt];
+  let resultAsStr = bgapiErrors.errorCodes[buffer.readUInt16LE(0)];
   return {needsMoreBytes: 0, eatenBytes: 2, decodedPacket: { 'result': resultAsStr} };
 }
 
@@ -403,7 +397,7 @@ function parseIncoming(incomingBytes, callback) {
     }
     else {
       if (skippedBytes > 0) {
-        console.warn('Note: skipped ' + skippedBytes + ' byte(s) preceeding a suspected message started');
+        console.warn('Note: skipped ' + skippedBytes + ' byte(s) preceeding a suspected message start');
         skippedBytes=0;
       }
       try {
