@@ -72,6 +72,9 @@ const Commands = {
 }
 
 function rsp_system_get_bt_address(buffer) {
+  if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+    buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+  
   /* We are sure to get at least 6 bytes here because minimumPayloadLength was set to 6 */
   let btAddressAsStr = '';
   for (const b of buffer.subarray(0, 6)) {
@@ -90,6 +93,9 @@ function rsp_system_get_bt_address(buffer) {
 }
 
 function rsp_generic_16bit_result_code(buffer) {
+  if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+    buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+  
   /* We are sure to get at least 2 bytes here because minimumPayloadLength was set to 2 */
   let resultAsStr = bgapiErrors.errorCodes[buffer.readUInt16LE(0)];
   return {needsMoreBytes: 0, eatenBytes: 2, decodedPacket: { 'result': resultAsStr} };
@@ -131,8 +137,10 @@ Responses[Classes.BluetoothMeshGenericServerModel] = {
 }
 
 function evt_system_boot(buffer) {
+  if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+    buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
   console.log('evt_system_boot got a buffer: ' + buffer.toString('hex'));
-  return {needsMoreBytes: 60};
+  //return { blabla: 1 };
 }
 
 /**
@@ -248,7 +256,13 @@ function decodeResponse(buffer) {
               console.debug('Will invoke handler for ' + handlerName + ' with args:');
               console.debug(buffer.slice(4));
             }
-            let handlerResult = Responses[messageClass][messageId].handler(buffer.slice(4));  /* Invoke handler, removing the 4 header bytes */
+            /* Invoke handler, removing the 4 header bytes */
+            /* Note that, because buffer is an array, during this call to the handler each byte will be sent to the handler as a separate argument */
+            let handlerResult = Responses[messageClass][messageId].handler.apply(this, buffer.slice(4));
+            if (DEBUG) {
+              console.debug('Handler result:');
+              console.debug(handlerResult);
+            }
             if (handlerResult) {
               if (handlerResult.eatenBytes === undefined &&
                   handlerResult.needsMoreBytes === undefined &&
@@ -344,7 +358,13 @@ function decodeEvent(buffer) {
               console.debug('Will invoke handler for ' + handlerName + ' with args:');
               console.debug(buffer.slice(4));
             }
-            let handlerResult = Events[messageClass][messageId].handler(buffer.slice(4));  /* Invoke handler, removing the 4 header bytes */
+            /* Invoke handler, removing the 4 header bytes */
+            /* Note that, because buffer is an array, during this call to the handler each byte will be sent to the handler as a separate argument */
+            let handlerResult = Events[messageClass][messageId].handler.apply(this, buffer.slice(4));
+            if (DEBUG) {
+              console.debug('Handler result:');
+              console.debug(handlerResult);
+            }
             if (handlerResult) {
               if (handlerResult.eatenBytes === undefined &&
                   handlerResult.needsMoreBytes === undefined &&
