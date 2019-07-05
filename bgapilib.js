@@ -257,6 +257,8 @@ function decodeResponse(buffer) {
                 console.warn('Unstructured response from handler assumed to be the raw result:');
                 console.warn(handlerResult);
                 resultDecodedPacket = handlerResult;
+                console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from Responses definition: ' + handlerMinimumPayloadLength);
+                resultEatenBytes += handlerMinimumPayloadLength;
               }
               else {  /* We have at least one attribute set among .eatenBytes, .needsMoreBytes or .decodedPacket */
                 if (DEBUG) {
@@ -266,8 +268,10 @@ function decodeResponse(buffer) {
                 
                 if (!(handlerResult.eatenBytes === undefined))
                   resultEatenBytes += handlerResult.eatenBytes; /* Take bytes eaten by handler into account */
-                else
-                  console.warn('No .eatenBytes attribute was provided by handler ' + handlerName);
+                else {
+                  console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from Responses definition: ' + handlerMinimumPayloadLength);
+                  resultEatenBytes += handlerMinimumPayloadLength;
+                }
                 
                 if (!(handlerResult.needsMoreBytes === undefined))
                   resultNeedsMoreBytes += handlerResult.needsMoreBytes; /* Take bytes needed by handler to complete decoding into account */
@@ -276,6 +280,11 @@ function decodeResponse(buffer) {
                 
                 resultDecodedPacket = handlerResult.decodedPacket;  /* For full feedback handlers, extract only the decodedPacket field */
               }
+            }
+            else {
+              console.warn('No result returned by handler ' + handlerName);
+              console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from Responses definition: ' + handlerMinimumPayloadLength);
+              resultEatenBytes += handlerMinimumPayloadLength;
             }
           }
         }
@@ -344,6 +353,8 @@ function decodeEvent(buffer) {
                 console.warn('Unstructured event from handler assumed to be the raw result:');
                 console.warn(handlerResult);
                 resultDecodedPacket = handlerResult;
+                console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from Events definition: ' + handlerMinimumPayloadLength);
+                resultEatenBytes += handlerMinimumPayloadLength;
               }
               else {  /* We have at least one attribute set among .eatenBytes, .needsMoreBytes or .decodedPacket */
                 if (DEBUG) {
@@ -353,8 +364,10 @@ function decodeEvent(buffer) {
                 
                 if (!(handlerResult.eatenBytes === undefined))
                   resultEatenBytes += handlerResult.eatenBytes; /* Take bytes eaten by handler into account */
-                else
-                  console.warn('No .eatenBytes attribute was provided by handler ' + handlerName);
+                else {
+                  console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from Events definition: ' + handlerMinimumPayloadLength);
+                  resultEatenBytes += handlerMinimumPayloadLength;
+                }
                 
                 if (!(handlerResult.needsMoreBytes === undefined))
                   resultNeedsMoreBytes += handlerResult.needsMoreBytes; /* Take bytes needed by handler to complete decoding into account */
@@ -363,6 +376,11 @@ function decodeEvent(buffer) {
                 
                 resultDecodedPacket = handlerResult.decodedPacket;  /* For full feedback handlers, extract only the decodedPacket field */
               }
+            }
+            else {
+              console.warn('No result returned by handler ' + handlerName);
+              console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from Events definition: ' + handlerMinimumPayloadLength);
+              resultEatenBytes += handlerMinimumPayloadLength;
             }
           }
         }
