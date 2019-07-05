@@ -5,7 +5,7 @@ const DEBUG = false;  /* Set this to true to enable verbose debug to console */
 const MessageTypes = {
   Command : 0x20,
   Response : 0x20,
-  Event : 0x0a,
+  Event : 0xa0,
 }
 
 const Classes = {
@@ -56,7 +56,7 @@ function namePrefixToClassId(name) {
 **/
 const Commands = {
   'system_reset' : {
-    id : 0x00,
+    id : 0x01,
     minimumPayloadLength : 1,
     handler : function(dfu) {
         if (dfu<0 && dfu>2)
@@ -96,18 +96,26 @@ function rsp_generic_16bit_result_code(buffer) {
 }
 
 /**
- * @brief List of known response messages and associated handlers
+ * @brief Known response messages and associated handlers
+ * 
+ * This object must be populated with entries whose key is the message class (use the Class enum above)
+ * The value of each entry is an object containing one entry per message decoded, using the message ID as the key.
+ * Each entry contains an object desribing the response:
+ * - Attribute minimumPayloadLength (optional) contains to the value of Minimum payload length taken from the BGAPI spec
+ * - Attribute name is the mandatory name of the message in the BGAPI spec (without the 'rsp_' prefix)
+ * - Attribute handler points to a function that will process and decode the response arguments, it will get as argument the payload of the message (excluding the fixed 4 BGAPI header bytes)
+ *   and it must return a JSON object containing the decoded response
 **/
 var Responses = {};
 Responses[Classes.System] = {
-  0x03 : {  /* This is the message id */
+  0x03 : {
     minimumPayloadLength : 6,
     name : 'system_get_bt_address',
     handler : rsp_system_get_bt_address,
   }
 }
 Responses[Classes.BluetoothMeshGenericClientModel] = {
-  0x04 : {  /* This is the message id */
+  0x04 : {
     minimumPayloadLength : 2,
     name : 'mesh_generic_client_init',
     handler : rsp_generic_16bit_result_code,
@@ -115,17 +123,37 @@ Responses[Classes.BluetoothMeshGenericClientModel] = {
 }
 
 Responses[Classes.BluetoothMeshGenericServerModel] = {
-  0x04 : {  /* This is the message id */
+  0x04 : {
     minimumPayloadLength : 2,
     name : 'mesh_generic_server_init',
     handler : rsp_generic_16bit_result_code,
   }
 }
 
+function evt_system_boot(buffer) {
+  console.log('evt_system_boot got a buffer: ' + buffer.toString('hex'));
+  return {needsMoreBytes: 60};
+}
+
 /**
- * @brief List of known event messages and associated handlers
+ * @brief Known event messages and associated handlers
+ * 
+ * This object must be populated with entries whose key is the message class (use the Class enum above)
+ * The value of each entry is an object containing one entry per message decoded, using the message ID as the key.
+ * Each entry contains an object desribing the event:
+ * - Attribute minimumPayloadLength (optional) contains to the value of Minimum payload length taken from the BGAPI spec
+ * - Attribute name is the mandatory name of the message in the BGAPI spec (without the 'evt_' prefix)
+ * - Attribute handler points to a function that will process and decode the event arguments, it will get as argument the payload of the message (excluding the fixed 4 BGAPI header bytes)
+ *   and it must return a JSON object containing the decoded event
 **/
 var Events = {};
+Events[Classes.System] = {
+  0x00 : {
+    minimumPayloadLength : 0x12,
+    name : 'evt_system_boot',
+    handler : evt_system_boot,
+  }
+}
 
 /**
  * @brief This function creates a BGAPI byte buffer representing the command provided as first argument
@@ -178,7 +206,7 @@ function getCommand(commandName) {
 /**
  * @brief Decode a response buffer
  *
- * @param buffer The buffer to decode (possibly too short, or with trailing bytes)
+ * @param buffer A Buffer object to decode (possibly too short, or with trailing bytes)
  * @return An object containing the result of the decoding process
 **/
 function decodeResponse(buffer) {
@@ -209,7 +237,7 @@ function decodeResponse(buffer) {
         if (bufferLength < handlerMinimumPayloadLength + 4) { /* Redo the buffer length check, not on packet data but on minimum values provided by the handler */
           resultNeedsMoreBytes = 4 + handlerMinimumPayloadLength - bufferLength;
         }
-        else {
+        else {  /* If we reach here, we know that we should at least have the minimum bytes (indicated by .handlerMinimumPayloadLength) in the buffer to start decoding */
           let responseName = Responses[messageClass][messageId].name;
           if (Responses[messageClass][messageId].handler === undefined) {
             console.error('No handler for response message ' + responseName);
@@ -265,7 +293,7 @@ function decodeResponse(buffer) {
 /**
  * @brief Decode an event buffer
  *
- * @param buffer The buffer to decode (possibly too short, or with trailing bytes)
+ * @param buffer A Buffer object to decode (possibly too short, or with trailing bytes)
  * @return An object containing the result of the decoding process
 **/
 function decodeEvent(buffer) {
