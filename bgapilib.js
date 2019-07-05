@@ -231,7 +231,7 @@ function decodeResponse(buffer) {
     }
     else {
       if (Responses[messageClass] && Responses[messageClass][messageId]) {
-        let handlerMinimumPayloadLength = Responses[messageClass][messageId].handlerMinimumPayloadLength;
+        let handlerMinimumPayloadLength = Responses[messageClass][messageId].minimumPayloadLength;
         if (handlerMinimumPayloadLength === undefined)
           handlerMinimumPayloadLength = 0;  /* If no minimum size was provided by handler, just assume 0 */
         if (bufferLength < handlerMinimumPayloadLength + 4) { /* Redo the buffer length check, not on packet data but on minimum values provided by the handler */
@@ -318,7 +318,7 @@ function decodeEvent(buffer) {
     }
     else {
       if (Events[messageClass] && Events[messageClass][messageId]) {
-        let handlerMinimumPayloadLength = Events[messageClass][messageId].handlerMinimumPayloadLength;
+        let handlerMinimumPayloadLength = Events[messageClass][messageId].minimumPayloadLength;
         if (handlerMinimumPayloadLength === undefined)
           handlerMinimumPayloadLength = 0;  /* If no minimum size was provided by handler, just assume 0 */
         if (bufferLength < handlerMinimumPayloadLength + 4) { /* Redo the buffer length check, not on packet data but on minimum values provided by the handler */
