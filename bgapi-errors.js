@@ -8,6 +8,7 @@
 **/
 
 const errorCodes = {
+0x0000: 'success',
 0x0101: 'invalid_conn_handle',
 0x0102: 'waiting_response',
 0x0103: 'gatt_connection_timeout',

@@ -208,6 +208,14 @@ Responses[Classes.BluetoothMeshGenericServerModel] = {
   }
 }
 
+Responses[Classes.PersitentStore] = {
+  0x01 : {
+    minimumPayloadLength : 2,
+    name : 'flash_ps_erase_all',
+    handler : rsp_generic_16bit_result_code,
+  }
+}
+
 /**
  * @brief Decoding handler for event  evt_system_boot
  * @param buffer A buffer containing the payload to decode associated with this message
