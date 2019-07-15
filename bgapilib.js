@@ -181,7 +181,7 @@ function evt_system_boot(buffer) {
   let bootloaderVersion = buffer.readUInt32LE(8);
   let hwType = buffer.readUInt16LE(12);
   let versionHash = buffer.readUInt32LE(14);
-  let resultAsStr = {
+  let result = {
     'major': majorVersion,
     'minor': minorVersion,
     'patch': patchVersion,
@@ -190,7 +190,7 @@ function evt_system_boot(buffer) {
     'hw': hwType,
     'hash': versionHash,
   }
-  return {needsMoreBytes: 0, eatenBytes: 18, decodedPacket: { 'result': resultAsStr} };
+  return {needsMoreBytes: 0, eatenBytes: 18, decodedPacket: result };
 }
 
 /**
