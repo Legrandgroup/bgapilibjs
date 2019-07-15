@@ -560,6 +560,8 @@ function parseIncoming(incomingBytes, callback) {
   let rxBuffer = Buffer.concat([bgapiRXBuffer, incomingBytes]);
   let skippedBytes = 0;
   let goodDecode = false;
+  let callbackException = null;
+  
   if (DEBUG) console.debug('Entering parseIncoming() with current RX buffer: ' + rxBuffer.toString('hex'));
   while (rxBuffer.length>0) {
     if (!validPacketStart(rxBuffer)) {
@@ -596,7 +598,13 @@ function parseIncoming(incomingBytes, callback) {
         let packet = result[1];
         if (packet) {
           goodDecode = true;
-          callback && callback(null, packet, 0);
+          try { /* Run the callback but if if raises any exception, just raise it back to caller */
+            callback && callback(null, packet, 0);
+          }
+          catch(exception) {
+            callbackException = exception;
+            break;  /* Stop decoding */
+          }
         }
       }
       catch(exception) {
@@ -608,10 +616,17 @@ function parseIncoming(incomingBytes, callback) {
       }
     }
   }
+  if (callbackException) {
+    console.warn('Stopping decoding input because callback raised the following exception:');
+    console.warn(callbackException.stack);
+  }
   if (rxBuffer.length != 0)
     console.warn(rxBuffer.length + ' trailing byte(s) remained undecoded');
   
   bgapiRXBuffer = rxBuffer;
+  if (callbackException) {
+    throw callbackException;
+  }
 }
 
 module.exports.resetParser = resetParser;
