@@ -3,6 +3,31 @@ const bgapiErrors = require('./bgapi-errors.js');
 const DEBUG = false;  /* Set this to true to enable verbose debug to console */
 
 /**
+ * @brief Convert a byte into its 2-hexadecimal digit representation
+ *
+ * @param uint8 The byte to convert to string
+ * @return The resulting string (2-digits)
+**/
+function UInt8ToHexStr(uint8) {
+  let bb = uint8 & 0xFF;  /* Force intput to be 8-bit, mask higher bits if any */
+  let resultStr = '';
+  if (!(bb & 0xF0)) /* Will only convert to one digit */
+    resultStr = '0'; /* So we prefix with a 0 before */
+  resultStr += bb.toString(16);
+  return resultStr;
+}
+
+/**
+ * @brief Convert a 16-bit word its 4-hexadecimal digit representation
+ *
+ * @param uint16 The 16-bit value to convert to string
+ * @return The resulting string (4-digits)
+**/
+function UInt16ToHexStr(uint16) {
+  return UInt8ToHexStr(uint16 & 0xFF00) + UInt8ToHexStr(uint16 & 0x00FF);  /* Force intput to be 16-bit, mask higher bits if any */
+}
+
+/**
  * @brief BGAPI message types (corresponds to the field hilen/message type in the BGAPI protocol)
 **/
 const MessageTypes = {
@@ -126,16 +151,10 @@ function rsp_system_get_bt_address(buffer) {
   /* We are sure to get at least 6 bytes here because minimumPayloadLength was set to 6 */
   let btAddressAsStr = '';
   for (const b of buffer.subarray(0, 6)) {
-    let bb = b & 0xFF;
-    let bbStr = '';
-    if (!(bb & 0xF0)) /* Will only convert to one digit */
-      bbStr = '0'; /* So we prefix with a 0 before */
-    bbStr += bb.toString(16);
-    console.log(bbStr);
     if (btAddressAsStr)
-      btAddressAsStr = bbStr + ':' + btAddressAsStr;  /* Prepend the byte (because buffer is in the reverse order in BGAPI */
+      btAddressAsStr = UInt8ToHexStr(b) + ':' + btAddressAsStr;  /* Prepend the byte (because buffer is in the reverse order in BGAPI */
     else
-      btAddressAsStr = bbStr; /* Only first byte */
+      btAddressAsStr = UInt8ToHexStr(b); /* Only first byte */
   }
   return {needsMoreBytes: 0, eatenBytes: 6, decodedPacket: { 'bd_addr': btAddressAsStr } };
 }
@@ -377,6 +396,9 @@ function decodeResponse(buffer) {
           }
         }
       }
+      else {
+        console.warn('No response handler found for messageClass=0x' + UInt8ToHexStr(messageClass) + ' & messageId=0x' + UInt8ToHexStr(messageId));
+      }
     }
   }
   let result = { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket, needsMoreBytes: resultNeedsMoreBytes };
@@ -478,6 +500,9 @@ function decodeEvent(buffer) {
             }
           }
         }
+      }
+      else {
+        console.warn('No event handler found for messageClass=0x' + UInt8ToHexStr(messageClass) + ' & messageId=0x' + UInt8ToHexStr(messageId));
       }
     }
   }
