@@ -67,6 +67,13 @@ const Commands = {
   'system_get_bt_address' : { id : 0x03 },
   'flash_ps_erase_all' : { id : 0x01 },
   'mesh_node_init' : { id : 0x00 },
+  'mesh_node_start_unprov_beaconing' : {
+    id: 0x01,
+    minimumPayloadLength : 1,
+    handler : function(bearer) {
+      return Buffer.from([bearer]);
+    }
+  },
   'mesh_generic_client_init' : { id : 0x04 },
   'mesh_generic_server_init' : { id : 0x04 },
 }
