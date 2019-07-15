@@ -123,7 +123,7 @@ function rsp_system_get_bt_address(buffer) {
     else
       btAddressAsStr = bbStr; /* Only first byte */
   }
-  return {needsMoreBytes: 0, eatenBytes: 6, decodedPacket: { 'bd_addr': btAddressAsStr} };
+  return {needsMoreBytes: 0, eatenBytes: 6, decodedPacket: { 'bd_addr': btAddressAsStr } };
 }
 
 function rsp_generic_16bit_result_code(buffer) {
@@ -132,7 +132,7 @@ function rsp_generic_16bit_result_code(buffer) {
   
   /* We are sure to get at least 2 bytes here because minimumPayloadLength was set to 2 */
   let resultAsStr = bgapiErrors.errorCodes[buffer.readUInt16LE(0)];
-  return {needsMoreBytes: 0, eatenBytes: 2, decodedPacket: { 'result': resultAsStr} };
+  return {needsMoreBytes: 0, eatenBytes: 2, decodedPacket: { 'result': resultAsStr } };
 }
 
 /**
@@ -533,7 +533,12 @@ function tryDecode(buffer, callback) {
           console.log('Buffer was: ' + buffer.toString('hex'));
         }
         buffer = buffer.slice(result.eatenBytes); /* Cut the first bytes that have now been decoded */
-        if (DEBUG) console.log('Buffer is now: ' + buffer.toString('hex'));
+        if (DEBUG) {
+          if (buffer.length>0)
+            console.log('Buffer is now: ' + buffer.toString('hex'));
+          else
+            console.log('Buffer is now empty');
+        }
         return [buffer, result.decodedPacket];  /* Good decode, return it with the new buffer where decoded bytes have been removed from the head */
       }
     }
