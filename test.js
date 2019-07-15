@@ -65,6 +65,7 @@ bgapi.parseIncoming(Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x02, 0x00, 0x0C, 0x00,
         assert(packets.bootloader == 0, 'Error on decoded bootloader version');
         assert(packets.hw == 1, 'Error on decoded hw version');
         assert(packets.hash == 3828121568, 'Error on decoded hash version');
+        assert(!err, "Expected no error");
     }
 );
 assert(callbackExecuted, 'Expected a call to callback function');
@@ -79,6 +80,29 @@ bgapi.resetParser();
 packet = bgapi.getCommand('flash_ps_erase_all');
 assert(packet.equals(Buffer.from([0x20, 0x00, 0x0D, 0x01])), 'Expected another payload for command cmd_flash_ps_erase_all. Got: ' + packet.toString('hex'));
 bgapi.parseIncoming(Buffer.from([0x20, 0x02, 0x0D, 0x01, 0x00, 0x00]), function(err, packets, nbMoreBytesNeeded) {
+        callbackExecuted = true;
+        assert(!err, "Expected no error");
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');
+
+console.log('Testing evt_mesh_node_provisioned');
+callbackExecuted = false;
+bgapi.resetParser();
+bgapi.parseIncoming(Buffer.from([0xA0, 0x06, 0x14, 0x01, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00]), function(err, packets, nbMoreBytesNeeded) {
+        callbackExecuted = true;
+        console.log('Running callback for rsp_system_reset');
+        assert(packets.iv_index == 0, 'Error on decoded iv_index');
+        assert(packets.address == 16, 'Error on decoded address');
+        assert(!err, "Expected no error");
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');
+    
+console.log('Testing evt_mesh_node_initialized');
+callbackExecuted = false;
+bgapi.resetParser();
+bgapi.parseIncoming(Buffer.from([0xA0, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), function(err, packets, nbMoreBytesNeeded) {
         callbackExecuted = true;
         if (!err)
             console.log(packets);

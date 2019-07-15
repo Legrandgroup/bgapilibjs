@@ -241,7 +241,7 @@ function evt_system_boot(buffer) {
     'hw': hwType,
     'hash': versionHash,
   }
-  return {needsMoreBytes: 0, eatenBytes: 18, decodedPacket: result };
+  return {needsMoreBytes: 0, eatenBytes: 18, decodedPacket: result};
 }
 
 /**
@@ -259,8 +259,20 @@ var Events = {};
 Events[Classes.System] = {
   0x00 : {
     minimumPayloadLength : 0x12,
-    name : 'evt_system_boot',
+    name : 'system_boot',
     handler : evt_system_boot,
+  }
+}
+
+Events[Classes.MeshNode] = {
+  0x01 : {
+    minimumPayloadLength : 0x06,
+    name : 'mesh_node_provisioned',
+    handler : function(buffer) {
+      if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+        buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+      return {needsMoreBytes: 0, eatenBytes: 6, decodedPacket: { 'iv_index': buffer.readUInt32LE(0), 'address': buffer.readUInt16LE(4) } };
+    }
   }
 }
 
