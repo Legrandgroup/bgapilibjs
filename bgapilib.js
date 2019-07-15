@@ -12,6 +12,7 @@ const Classes = {
   System : 0x01,
   PersitentStore : 0x0d,
   MeshNode : 0x14,
+  GenericAttributeProfileServer : 0x0a,
   BluetoothMeshGenericClientModel : 0x1e,
   BluetoothMeshGenericServerModel : 0x1f,
 }
@@ -22,6 +23,7 @@ const PrefixToClass = {
   'mesh_node' : Classes.MeshNode,
   'mesh_generic_client' : Classes.BluetoothMeshGenericClientModel,
   'mesh_generic_server' : Classes.BluetoothMeshGenericServerModel,
+  'gatt_server' : Classes.GenericAttributeProfileServer,
 }
 
 var bgapiRXBuffer = Buffer.alloc(0);
@@ -42,6 +44,26 @@ function namePrefixToClassId(name) {
     }
   }
   return undefined;
+}
+
+/**
+ * @brief Implementation of command gatt_server_write_attribute_value
+ * @param attribute A 16-bit value containing the Attribute handle
+ * @param offset A 16-bit value containint the Value offset
+ * @param value A variable-length Buffer object containing the Value
+**/
+function cmd_gatt_server_write_attribute_value(attribute, offset, value) {
+  if (typeof value == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+    value = Buffer.from(arguments, 2);  /* if this is the case, convert arguments back to a Buffer object to be able to process it, skipping the previous positional arguments */
+  if (typeof value == 'string') /* We also permissively accept a string as value (3rd parameter), we will then perform the transformation to a buffer ourselves */
+    value = Buffer.from(value);
+  resultHead = Buffer.alloc(5); /* Allocate twice 16-bits to carry attribute + offset, and one more byte to store the length of the byte array for value */
+  resultHead.writeUInt16LE(attribute, 0);
+  resultHead.writeUInt16LE(offset, 2);
+  if (value.length>255)
+    throw new Error('Value longer than 255 bytes: ' + value.toString('hex'));
+  resultHead.writeUInt8(value.length, 4);
+  return Buffer.concat([resultHead, value]);
 }
 
 /**
@@ -73,6 +95,11 @@ const Commands = {
     handler : function(bearer) {
       return Buffer.from([bearer]);
     }
+  },
+  'gatt_server_write_attribute_value' : {
+    id : 0x02,
+    minimumPayloadLength : 5,
+    handler : cmd_gatt_server_write_attribute_value,
   },
   'mesh_generic_client_init' : { id : 0x04 },
   'mesh_generic_server_init' : { id : 0x04 },
