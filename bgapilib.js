@@ -2,12 +2,18 @@ const bgapiErrors = require('./bgapi-errors.js');
 
 const DEBUG = false;  /* Set this to true to enable verbose debug to console */
 
+/**
+ * @brief BGAPI message types (corresponds to the field hilen/message type in the BGAPI protocol)
+**/
 const MessageTypes = {
   Command : 0x20,
   Response : 0x20,
   Event : 0xa0,
 }
 
+/**
+ * @brief BGAPI message classes (corresponds to the field class in the BGAPI protocol)
+**/
 const Classes = {
   System : 0x01,
   PersitentStore : 0x0d,
@@ -17,6 +23,9 @@ const Classes = {
   BluetoothMeshGenericServerModel : 0x1f,
 }
 
+/**
+ * @brief Map of BGAPI message string prefixes to their corresponding BGAPI classes
+**/
 const PrefixToClass = {
   'system' : Classes.System,
   'flash_ps' : Classes.PersitentStore,
@@ -105,6 +114,11 @@ const Commands = {
   'mesh_generic_server_init' : { id : 0x04 },
 }
 
+/**
+ * @brief Decoding handler for response rsp_system_get_bt_address
+ * @param buffer A buffer containing the payload to decode associated with this message
+ * @return A JSON object containing the decoded response
+**/
 function rsp_system_get_bt_address(buffer) {
   if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
     buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
@@ -126,6 +140,11 @@ function rsp_system_get_bt_address(buffer) {
   return {needsMoreBytes: 0, eatenBytes: 6, decodedPacket: { 'bd_addr': btAddressAsStr } };
 }
 
+/**
+ * @brief Generic decoding handler for responses carrying only one 16-bit result code
+ * @param buffer A buffer containing the payload to decode associated with this message
+ * @return A JSON object containing the decoded response
+**/
 function rsp_generic_16bit_result_code(buffer) {
   if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
     buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
@@ -170,6 +189,11 @@ Responses[Classes.BluetoothMeshGenericServerModel] = {
   }
 }
 
+/**
+ * @brief Decoding handler for event  evt_system_boot
+ * @param buffer A buffer containing the payload to decode associated with this message
+ * @return A JSON object containing the decoded event
+**/
 function evt_system_boot(buffer) {
   if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
     buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
