@@ -82,3 +82,15 @@ console.log('Testing cmd_gatt_server_write_attribute_value packet generation');
 packet = bgapi.getCommand('gatt_server_write_attribute_value', 11, 0, 'fake node');
 assert(packet.equals(Buffer.from([0x20, 0x05, 0x0A, 0x02, 0x0B, 0x00, 0x00, 0x00, 0x09, 0x66, 0x61, 0x6B, 0x65, 0x20, 0x6E, 0x6F, 0x64, 0x65])), 'Expected another payload for command cmd_system_reset. Got: ' + packet.toString('hex'));
 
+console.log('Testing cmd_flash_ps_erase_all packet generation and response');
+callbackExecuted = false;
+bgapi.resetParser();
+packet = bgapi.getCommand('flash_ps_erase_all');
+assert(packet.equals(Buffer.from([0x20, 0x00, 0x0D, 0x01])), 'Expected another payload for command cmd_flash_ps_erase_all. Got: ' + packet.toString('hex'));
+bgapi.parseIncoming(Buffer.from([0x20, 0x02, 0x0D, 0x01, 0x00, 0x00]), function(err, packets, nbMoreBytesNeeded) {
+        callbackExecuted = true;
+        if (!err)
+            console.log(packets);
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');
