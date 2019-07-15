@@ -6,15 +6,12 @@ var packet;
 
 var callbackExecuted;
 
-packet = bgapi.getCommand('flash_ps_erase_all');
-console.log(packet.toJSON())
-
 console.log('Testing handling for unaligned buffer (unrecognized starting sequence)...');
 bgapi.resetParser();
 callbackExecuted = false;
 bgapi.parseIncoming(Buffer.from([0x00]), function(err, packets, nbMoreBytesNeeded) {
         assert(err, "Undetected too short and unaligned buffer.");
-        assert(packet!=null, "Returned packet should be null");
+        assert(packets===null, "Returned packet should be null");
         callbackExecuted = true;
     }
 );
@@ -61,8 +58,6 @@ assert(packet.equals(Buffer.from([0x20, 0x01, 0x01, 0x01, 0x00])), 'Expected ano
 bgapi.parseIncoming(Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x02, 0x00, 0x0C, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]), function(err, packets, nbMoreBytesNeeded) {
         callbackExecuted = true;
         console.log('Running callback for rsp_system_reset');
-//        console.log('Got the following packets:');
-//        console.log(packets);
         assert(packets.major == 2, 'Error on decoded major version');
         assert(packets.minor == 12, 'Error on decoded minor version');
         assert(packets.patch == 0, 'Error on decoded patch version');
