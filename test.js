@@ -4,14 +4,10 @@ var assert = require('assert');
 
 var packet;
 
-packet = bgapi.getCommand('system_reset', 0);
-console.log(packet.toJSON())
+var callbackExecuted;
 
 packet = bgapi.getCommand('flash_ps_erase_all');
 console.log(packet.toJSON())
-
-
-var callbackExecuted;
 
 console.log('Testing handling for unaligned buffer (unrecognized starting sequence)...');
 bgapi.resetParser();
