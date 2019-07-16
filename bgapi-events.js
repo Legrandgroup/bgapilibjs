@@ -68,3 +68,5 @@ Events[bgapiDefs.Classes.MeshNode] = {
     }
   }
 }
+
+module.exports.Events = Events;
