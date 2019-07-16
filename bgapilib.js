@@ -1,4 +1,5 @@
 const bgapiErrors = require('./bgapi-errors.js');
+const bgapiDefs = require('./bgapi-defs.js');
 
 const DEBUG = false;  /* Set this to true to enable verbose debug to console */
 
@@ -27,39 +28,6 @@ function UInt16ToHexStr(uint16) {
   return UInt8ToHexStr(uint16 & 0xFF00) + UInt8ToHexStr(uint16 & 0x00FF);  /* Force intput to be 16-bit, mask higher bits if any */
 }
 
-/**
- * @brief BGAPI message types (corresponds to the field hilen/message type in the BGAPI protocol)
-**/
-const MessageTypes = {
-  Command : 0x20,
-  Response : 0x20,
-  Event : 0xa0,
-}
-
-/**
- * @brief BGAPI message classes (corresponds to the field class in the BGAPI protocol)
-**/
-const Classes = {
-  System : 0x01,
-  PersitentStore : 0x0d,
-  MeshNode : 0x14,
-  GenericAttributeProfileServer : 0x0a,
-  BluetoothMeshGenericClientModel : 0x1e,
-  BluetoothMeshGenericServerModel : 0x1f,
-}
-
-/**
- * @brief Map of BGAPI message string prefixes to their corresponding BGAPI classes
-**/
-const PrefixToClass = {
-  'system' : Classes.System,
-  'flash_ps' : Classes.PersitentStore,
-  'mesh_node' : Classes.MeshNode,
-  'mesh_generic_client' : Classes.BluetoothMeshGenericClientModel,
-  'mesh_generic_server' : Classes.BluetoothMeshGenericServerModel,
-  'gatt_server' : Classes.GenericAttributeProfileServer,
-}
-
 var bgapiRXBuffer = Buffer.alloc(0);
 var bgapiRXBufferPos = 0;
 
@@ -70,10 +38,10 @@ var bgapiRXBufferPos = 0;
  * @return The auto-detected class ID or undefined if we did not find a match
 **/
 function namePrefixToClassId(name) {
-  for (var prefix in PrefixToClass) {
-    if (PrefixToClass.hasOwnProperty(prefix)) {
+  for (var prefix in bgapiDefs.PrefixToClass) {
+    if (bgapiDefs.PrefixToClass.hasOwnProperty(prefix)) {
       if (name.startsWith(prefix)) {
-        return PrefixToClass[prefix];
+        return bgapiDefs.PrefixToClass[prefix];
       }
     }
   }
@@ -185,14 +153,14 @@ function rsp_generic_16bit_result_code(buffer) {
  *   and it must return a JSON object containing the decoded response
 **/
 var Responses = {};
-Responses[Classes.System] = {
+Responses[bgapiDefs.Classes.System] = {
   0x03 : {
     minimumPayloadLength : 6,
     name : 'system_get_bt_address',
     handler : rsp_system_get_bt_address,
   }
 }
-Responses[Classes.BluetoothMeshGenericClientModel] = {
+Responses[bgapiDefs.Classes.BluetoothMeshGenericClientModel] = {
   0x04 : {
     minimumPayloadLength : 2,
     name : 'mesh_generic_client_init',
@@ -200,7 +168,7 @@ Responses[Classes.BluetoothMeshGenericClientModel] = {
   }
 }
 
-Responses[Classes.BluetoothMeshGenericServerModel] = {
+Responses[bgapiDefs.Classes.BluetoothMeshGenericServerModel] = {
   0x04 : {
     minimumPayloadLength : 2,
     name : 'mesh_generic_server_init',
@@ -208,7 +176,7 @@ Responses[Classes.BluetoothMeshGenericServerModel] = {
   }
 }
 
-Responses[Classes.PersitentStore] = {
+Responses[bgapiDefs.Classes.PersitentStore] = {
   0x01 : {
     minimumPayloadLength : 2,
     name : 'flash_ps_erase_all',
@@ -256,7 +224,7 @@ function evt_system_boot(buffer) {
  *   and it must return a JSON object containing the decoded event
 **/
 var Events = {};
-Events[Classes.System] = {
+Events[bgapiDefs.Classes.System] = {
   0x00 : {
     minimumPayloadLength : 0x12,
     name : 'system_boot',
@@ -264,7 +232,7 @@ Events[Classes.System] = {
   }
 }
 
-Events[Classes.MeshNode] = {
+Events[bgapiDefs.Classes.MeshNode] = {
   0x00 : {
     minimumPayloadLength : 0x07,
     name : 'mesh_node_initialized',
@@ -297,7 +265,7 @@ function getCommand(commandName) {
     if (Commands[commandName]) {
       let header = Buffer.alloc(4);
       
-      header[0] = MessageTypes.Command;
+      header[0] = bgapiDefs.MessageTypes.Command;
       
       let minimumPayloadLength = Commands[commandName].minimumPayloadLength;
       if (minimumPayloadLength === undefined) { /* Assume 0 if no minimumPayloadLength property exists */
@@ -349,7 +317,7 @@ function decodeResponse(buffer) {
     resultNeedsMoreBytes = 4 - bufferLength;
   }
   else {
-    if (buffer[0] != MessageTypes.Response) {
+    if (buffer[0] != bgapiDefs.MessageTypes.Response) {
       throw new Error("Invalid response buffer: " + buffer.toString('hex'));
     }
     resultEatenBytes += 4;
@@ -454,7 +422,7 @@ function decodeEvent(buffer) {
     resultNeedsMoreBytes = 4 - bufferLength;
   }
   else {
-    if (buffer[0] != MessageTypes.Event) {
+    if (buffer[0] != bgapiDefs.MessageTypes.Event) {
       throw new Error("Invalid event buffer: " + buffer.toString('hex'));
     }
     resultEatenBytes += 4;
@@ -550,10 +518,10 @@ function decodeEvent(buffer) {
  * @return An object containing the result of the decoding process or undefined if no decoding could be performed
 **/
 function decodeBuffer(buffer) {
-  if (buffer[0] == MessageTypes.Response) {
+  if (buffer[0] == bgapiDefs.MessageTypes.Response) {
     return decodeResponse(buffer);
   }
-  else if (buffer[0] == MessageTypes.Event) {
+  else if (buffer[0] == bgapiDefs.MessageTypes.Event) {
     return decodeEvent(buffer);
   }
   else
@@ -567,8 +535,8 @@ function decodeBuffer(buffer) {
  * @return true if the buffer starts with a valid signature
 **/
 function validPacketStart(buffer) {
-  return (buffer[0] == MessageTypes.Response ||
-          buffer[0] == MessageTypes.Event); /* Found the start of a message */
+  return (buffer[0] == bgapiDefs.MessageTypes.Response ||
+          buffer[0] == bgapiDefs.MessageTypes.Event); /* Found the start of a message */
 }
 
 /**
