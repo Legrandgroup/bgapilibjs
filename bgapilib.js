@@ -1,5 +1,5 @@
-const bgapiErrors = require('./bgapi-errors.js');
 const bgapiDefs = require('./bgapi-defs.js');
+const bgapiResponses = require('./bgapi-responses.js');
 
 const DEBUG = false;  /* Set this to true to enable verbose debug to console */
 
@@ -105,83 +105,6 @@ const Commands = {
   },
   'mesh_generic_client_init' : { id : 0x04 },
   'mesh_generic_server_init' : { id : 0x04 },
-}
-
-/**
- * @brief Decoding handler for response rsp_system_get_bt_address
- * @param buffer A buffer containing the payload to decode associated with this message
- * @return A JSON object containing the decoded response
-**/
-function rsp_system_get_bt_address(buffer) {
-  if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
-    buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
-  
-  /* We are sure to get at least 6 bytes here because minimumPayloadLength was set to 6 */
-  let btAddressAsStr = '';
-  for (const b of buffer.subarray(0, 6)) {
-    if (btAddressAsStr)
-      btAddressAsStr = UInt8ToHexStr(b) + ':' + btAddressAsStr;  /* Prepend the byte (because buffer is in the reverse order in BGAPI */
-    else
-      btAddressAsStr = UInt8ToHexStr(b); /* Only first byte */
-  }
-  return {needsMoreBytes: 0, eatenBytes: 6, decodedPacket: { 'bd_addr': btAddressAsStr } };
-}
-
-/**
- * @brief Generic decoding handler for responses carrying only one 16-bit result code
- * @param buffer A buffer containing the payload to decode associated with this message
- * @return A JSON object containing the decoded response
-**/
-function rsp_generic_16bit_result_code(buffer) {
-  if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
-    buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
-  
-  /* We are sure to get at least 2 bytes here because minimumPayloadLength was set to 2 */
-  let resultAsStr = bgapiErrors.errorCodes[buffer.readUInt16LE(0)];
-  return {needsMoreBytes: 0, eatenBytes: 2, decodedPacket: { 'result': resultAsStr } };
-}
-
-/**
- * @brief Known response messages and associated handlers
- * 
- * This object must be populated with entries whose key is the message class (use the Class enum above)
- * The value of each entry is an object containing one entry per message decoded, using the message ID as the key.
- * Each entry contains an object desribing the response:
- * - Attribute minimumPayloadLength (optional) contains to the value of Minimum payload length taken from the BGAPI spec
- * - Attribute name is the mandatory name of the message in the BGAPI spec (without the 'rsp_' prefix)
- * - Attribute handler points to a function that will process and decode the response arguments, it will get as argument the payload of the message (excluding the fixed 4 BGAPI header bytes)
- *   and it must return a JSON object containing the decoded response
-**/
-var Responses = {};
-Responses[bgapiDefs.Classes.System] = {
-  0x03 : {
-    minimumPayloadLength : 6,
-    name : 'system_get_bt_address',
-    handler : rsp_system_get_bt_address,
-  }
-}
-Responses[bgapiDefs.Classes.BluetoothMeshGenericClientModel] = {
-  0x04 : {
-    minimumPayloadLength : 2,
-    name : 'mesh_generic_client_init',
-    handler : rsp_generic_16bit_result_code,
-  }
-}
-
-Responses[bgapiDefs.Classes.BluetoothMeshGenericServerModel] = {
-  0x04 : {
-    minimumPayloadLength : 2,
-    name : 'mesh_generic_server_init',
-    handler : rsp_generic_16bit_result_code,
-  }
-}
-
-Responses[bgapiDefs.Classes.PersitentStore] = {
-  0x01 : {
-    minimumPayloadLength : 2,
-    name : 'flash_ps_erase_all',
-    handler : rsp_generic_16bit_result_code,
-  }
 }
 
 /**
@@ -328,27 +251,27 @@ function decodeResponse(buffer) {
       resultNeedsMoreBytes = 4 + minimumPayloadLength - bufferLength;
     }
     else {
-      if (Responses[messageClass] && Responses[messageClass][messageId]) {
-        let handlerMinimumPayloadLength = Responses[messageClass][messageId].minimumPayloadLength;
+      if (bgapiResponses.Responses[messageClass] && bgapiResponses.Responses[messageClass][messageId]) {
+        let handlerMinimumPayloadLength = bgapiResponses.Responses[messageClass][messageId].minimumPayloadLength;
         if (handlerMinimumPayloadLength === undefined)
           handlerMinimumPayloadLength = 0;  /* If no minimum size was provided by handler, just assume 0 */
         if (bufferLength < handlerMinimumPayloadLength + 4) { /* Redo the buffer length check, not on packet data but on minimum values provided by the handler */
           resultNeedsMoreBytes = 4 + handlerMinimumPayloadLength - bufferLength;
         }
         else {  /* If we reach here, we know that we should at least have the minimum bytes (indicated by .handlerMinimumPayloadLength) in the buffer to start decoding */
-          let responseName = Responses[messageClass][messageId].name;
-          if (Responses[messageClass][messageId].handler === undefined) {
+          let responseName = bgapiResponses.Responses[messageClass][messageId].name;
+          if (bgapiResponses.Responses[messageClass][messageId].handler === undefined) {
             console.error('No handler for response message ' + responseName);
           }
           else {
-            let handlerName = Responses[messageClass][messageId].name;
+            let handlerName = bgapiResponses.Responses[messageClass][messageId].name;
             if (DEBUG) {
               console.debug('Will invoke handler for ' + handlerName + ' with args:');
               console.debug(buffer.slice(4));
             }
             /* Invoke handler, removing the 4 header bytes */
             /* Note that, because buffer is an array, during this call to the handler each byte will be sent to the handler as a separate argument */
-            let handlerResult = Responses[messageClass][messageId].handler.apply(this, buffer.slice(4));
+            let handlerResult = bgapiResponses.Responses[messageClass][messageId].handler.apply(this, buffer.slice(4));
             if (DEBUG) {
               console.debug('Handler result:');
               console.debug(handlerResult);
