@@ -98,14 +98,16 @@ bgapi.parseIncoming(Buffer.from([0xA0, 0x06, 0x14, 0x01, 0x00, 0x00, 0x00, 0x00,
     }
 );
 assert(callbackExecuted, 'Expected a call to callback function');
-    
+
 console.log('Testing evt_mesh_node_initialized');
 callbackExecuted = false;
 bgapi.resetParser();
 bgapi.parseIncoming(Buffer.from([0xA0, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), function(err, packets, nbMoreBytesNeeded) {
         callbackExecuted = true;
-        if (!err)
-            console.log(packets);
+        console.log('Running callback for rsp_system_reset');
+        assert(packets.provisioned, 'Error on decoded provisioned');
+        assert(packets.address == 0, 'Error on decoded address');
+        assert(!err, "Expected no error");
     }
 );
 assert(callbackExecuted, 'Expected a call to callback function');

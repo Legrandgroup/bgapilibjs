@@ -265,6 +265,15 @@ Events[Classes.System] = {
 }
 
 Events[Classes.MeshNode] = {
+  0x00 : {
+    minimumPayloadLength : 0x07,
+    name : 'mesh_node_initialized',
+    handler : function(buffer) {
+      if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+        buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+      return {needsMoreBytes: 0, eatenBytes: 7, decodedPacket: { 'provisioned': (buffer.readUInt8(0) == 0), 'address': buffer.readUInt16LE(1), 'ivi': buffer.readUInt32LE(3) } };
+    }
+  },
   0x01 : {
     minimumPayloadLength : 0x06,
     name : 'mesh_node_provisioned',
