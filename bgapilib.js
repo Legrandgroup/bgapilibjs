@@ -463,7 +463,12 @@ function parseIncoming(incomingBytes, callback) {
         let result = tryDecode(rxBuffer, function(needsMoreBytes) {
             console.log('Reaching needsmodebytes callback');
             bufferNeedsMoreBytes = needsMoreBytes;
-            callback && callback(null, null, needsMoreBytes);
+            try {
+              callback && callback(null, null, needsMoreBytes);
+            }
+            catch(exception) {
+              callbackException = exception;
+            }
           }
         );
         if (bufferNeedsMoreBytes>0) {
