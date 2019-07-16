@@ -6,7 +6,7 @@ var packet;
 
 var callbackExecuted;
 
-console.log('Testing handling for unaligned buffer (unrecognized starting sequence)...');
+console.log('=== Testing handling for unaligned buffer (unrecognized starting sequence)...');
 bgapi.resetParser();
 callbackExecuted = false;
 bgapi.parseIncoming(Buffer.from([0x00]), function(err, packets, nbMoreBytesNeeded) {
@@ -17,7 +17,7 @@ bgapi.parseIncoming(Buffer.from([0x00]), function(err, packets, nbMoreBytesNeede
 );
 assert(callbackExecuted, 'Expected a call to callback function with error');
 
-console.log('Testing handling for short incoming buffer...');
+console.log('=== Testing handling for short incoming buffer...');
 bgapi.resetParser();
 callbackExecuted = false;
 bgapi.parseIncoming(Buffer.from([0x20]), function(err, packets, nbMoreBytesNeeded) {
@@ -27,7 +27,7 @@ bgapi.parseIncoming(Buffer.from([0x20]), function(err, packets, nbMoreBytesNeede
 );
 assert(callbackExecuted, 'Expected a call to callback function with nbMoreBytesNeeded');
 
-console.log('Testing parsing for mesh_generic_server_init response with error code...');
+console.log('=== Testing parsing for mesh_generic_server_init response with error code...');
 callbackExecuted = false;
 bgapi.resetParser();
 bgapi.parseIncoming(Buffer.from([0x20, 0x02, 0x1f, 0x04, 0x80, 0x01]), function(err, packets, nbMoreBytesNeeded) {
@@ -39,7 +39,7 @@ bgapi.parseIncoming(Buffer.from([0x20, 0x02, 0x1f, 0x04, 0x80, 0x01]), function(
 );
 assert(callbackExecuted, 'Expected a call to callback function');
 
-console.log('Testing parsing for concatenated system_get_bt_address responses...');
+console.log('=== Testing parsing for concatenated system_get_bt_address responses...');
 callbackExecuted = false;
 bgapi.resetParser();
 bgapi.parseIncoming(Buffer.from([0x00, 0x20, 0x06, 0x01, 0x03, 0x06, 0x05, 0xa4, 0x03, 0x02, 0x01, 0x20, 0x06, 0x01, 0x03, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01]), function(err, packets, nbMoreBytesNeeded) {
@@ -50,7 +50,7 @@ bgapi.parseIncoming(Buffer.from([0x00, 0x20, 0x06, 0x01, 0x03, 0x06, 0x05, 0xa4,
 );
 assert(callbackExecuted, 'Expected a call to callback function');
 
-console.log('Testing cmd_system_reset emission and feedback event');
+console.log('=== Testing cmd_system_reset emission and feedback event');
 callbackExecuted = false;
 bgapi.resetParser();
 packet = bgapi.getCommand('system_reset', 0);
@@ -70,11 +70,11 @@ bgapi.parseIncoming(Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x02, 0x00, 0x0C, 0x00,
 );
 assert(callbackExecuted, 'Expected a call to callback function');
 
-console.log('Testing cmd_gatt_server_write_attribute_value packet generation');
+console.log('=== Testing cmd_gatt_server_write_attribute_value packet generation');
 packet = bgapi.getCommand('gatt_server_write_attribute_value', 11, 0, 'fake node');
 assert(packet.equals(Buffer.from([0x20, 0x05, 0x0A, 0x02, 0x0B, 0x00, 0x00, 0x00, 0x09, 0x66, 0x61, 0x6B, 0x65, 0x20, 0x6E, 0x6F, 0x64, 0x65])), 'Expected another payload for command cmd_system_reset. Got: ' + packet.toString('hex'));
 
-console.log('Testing cmd_flash_ps_erase_all packet generation and response');
+console.log('=== Testing cmd_flash_ps_erase_all packet generation and response');
 callbackExecuted = false;
 bgapi.resetParser();
 packet = bgapi.getCommand('flash_ps_erase_all');
@@ -86,12 +86,12 @@ bgapi.parseIncoming(Buffer.from([0x20, 0x02, 0x0D, 0x01, 0x00, 0x00]), function(
 );
 assert(callbackExecuted, 'Expected a call to callback function');
 
-console.log('Testing evt_mesh_node_provisioned');
+console.log('=== Testing evt_mesh_node_provisioned');
 callbackExecuted = false;
 bgapi.resetParser();
 bgapi.parseIncoming(Buffer.from([0xA0, 0x06, 0x14, 0x01, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00]), function(err, packets, nbMoreBytesNeeded) {
         callbackExecuted = true;
-        console.log('Running callback for rsp_system_reset');
+        console.log('Running callback for evt_mesh_node_provisioned');
         assert(packets.iv_index == 0, 'Error on decoded iv_index');
         assert(packets.address == 16, 'Error on decoded address');
         assert(!err, "Expected no error");
@@ -99,12 +99,12 @@ bgapi.parseIncoming(Buffer.from([0xA0, 0x06, 0x14, 0x01, 0x00, 0x00, 0x00, 0x00,
 );
 assert(callbackExecuted, 'Expected a call to callback function');
 
-console.log('Testing evt_mesh_node_initialized');
+console.log('=== Testing evt_mesh_node_initialized');
 callbackExecuted = false;
 bgapi.resetParser();
 bgapi.parseIncoming(Buffer.from([0xA0, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), function(err, packets, nbMoreBytesNeeded) {
         callbackExecuted = true;
-        console.log('Running callback for rsp_system_reset');
+        console.log('Running callback for evt_mesh_node_initialized');
         assert(packets.provisioned, 'Error on decoded provisioned');
         assert(packets.address == 0, 'Error on decoded address');
         assert(!err, "Expected no error");
@@ -112,7 +112,7 @@ bgapi.parseIncoming(Buffer.from([0xA0, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00,
 );
 assert(callbackExecuted, 'Expected a call to callback function');
 
-console.log('Testing exception in callback when more bytes needed');
+console.log('=== Testing exception in callback when more bytes needed');
 callbackExecuted = false;
 exceptionRaised = false;
 bgapi.resetParser();
