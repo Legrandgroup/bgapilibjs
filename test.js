@@ -111,3 +111,23 @@ bgapi.parseIncoming(Buffer.from([0xA0, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00,
     }
 );
 assert(callbackExecuted, 'Expected a call to callback function');
+
+console.log('Testing exception in callback when more bytes needed');
+callbackExecuted = false;
+exceptionRaised = false;
+bgapi.resetParser();
+try {
+    bgapi.parseIncoming(Buffer.from([0xA0, 0x07, 0x14, 0x00, 0x00]), function(err, packets, nbMoreBytesNeeded) {
+            callbackExecuted = true;
+            throw new Error('TestException');
+        }
+    );
+}
+catch(exception) {
+    exceptionRaised = true;
+    console.log('Above exception was expected in test');
+    assert(exception.message == 'TestException', 'Exception message mismatch: ' + exception.message);
+    assert(exception.name == 'Error', 'Exception name mismatch: ' + exception.name);
+}
+assert(callbackExecuted, 'Expected a call to callback function');
+assert(exceptionRaised, 'Expected an exception propagated to us');
