@@ -1,5 +1,6 @@
 const bgapiDefs = require('./bgapi-defs.js');
 const bgapiErrors = require('./bgapi-errors.js');
+const bgapiUtils = require('./bgapi-utils.js');
 
 /**
  * @brief Decoding handler for response rsp_system_get_bt_address
@@ -14,9 +15,9 @@ function rsp_system_get_bt_address(buffer) {
   let btAddressAsStr = '';
   for (const b of buffer.subarray(0, 6)) {
     if (btAddressAsStr)
-      btAddressAsStr = UInt8ToHexStr(b) + ':' + btAddressAsStr;  /* Prepend the byte (because buffer is in the reverse order in BGAPI */
+      btAddressAsStr = bgapiUtils.UInt8ToHexStr(b) + ':' + btAddressAsStr;  /* Prepend the byte (because buffer is in the reverse order in BGAPI */
     else
-      btAddressAsStr = UInt8ToHexStr(b); /* Only first byte */
+      btAddressAsStr = bgapiUtils.UInt8ToHexStr(b); /* Only first byte */
   }
   return {needsMoreBytes: 0, eatenBytes: 6, decodedPacket: { 'bd_addr': btAddressAsStr } };
 }
