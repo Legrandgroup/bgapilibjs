@@ -75,13 +75,34 @@ function getCommand(commandName) {
 }
 
 /**
- * @brief Decode a response buffer
+ * @brief Decode an event or response buffer
+ *
+ * @note This code is common for events or response
  *
  * @param buffer A Buffer object to decode (possibly too short, or with trailing bytes)
+ * @param incomingMessageType one of the possible value of incomingMessageCategoryType enum
  * @return An object containing the result of the decoding process
 **/
-function decodeResponse(buffer) {
-  console.log('Decoding response packet ' + buffer.toString('hex'));
+function decodeGeneric(buffer, incomingMessageType) {
+  let incomingMessageName;
+  let incomingMessageHandlerDescr;
+  switch (incomingMessageType) {
+    case bgapiDefs.MessageTypes.Response:
+      incomingMessageName = 'response';
+      incomingMessageHandlerDescr = bgapiResponses.Responses;
+      break;
+    case bgapiDefs.MessageTypes.Event:
+      incomingMessageName = 'event';
+      incomingMessageHandlerDescr = bgapiEvents.Events;
+      break;
+    default:
+      throw new Error("Unknown message type: " + incomingMessageType);
+  }
+  /* The code below is generic and processes indifferently response or event messages */
+  /* incomingMessageName is a the human-friendly string representation type of the message (for logging purposes) */
+  /* incomingMessageHandlerDescr is an alias for the message handler description (either bgapiResponses.Responses or bgapiResponses.Events) */
+  
+  console.log('Decoding ' + incomingMessageName + ' packet ' + buffer.toString('hex'));
   let bufferLength = buffer.length;
   let resultNeedsMoreBytes = 0;
   let resultEatenBytes = 0;
@@ -90,8 +111,8 @@ function decodeResponse(buffer) {
     resultNeedsMoreBytes = 4 - bufferLength;
   }
   else {
-    if (buffer[0] != bgapiDefs.MessageTypes.Response) {
-      throw new Error("Invalid response buffer: " + buffer.toString('hex'));
+    if (buffer[0] != incomingMessageType) {
+      throw new Error('Invalid ' + incomingMessageName + ' buffer: ' + buffer.toString('hex'));
     }
     resultEatenBytes += 4;
     let minimumPayloadLength = buffer[1];
@@ -101,27 +122,27 @@ function decodeResponse(buffer) {
       resultNeedsMoreBytes = 4 + minimumPayloadLength - bufferLength;
     }
     else {
-      if (bgapiResponses.Responses[messageClass] && bgapiResponses.Responses[messageClass][messageId]) {
-        let handlerMinimumPayloadLength = bgapiResponses.Responses[messageClass][messageId].minimumPayloadLength;
+      if (incomingMessageHandlerDescr[messageClass] && incomingMessageHandlerDescr[messageClass][messageId]) {
+        let handlerMinimumPayloadLength = incomingMessageHandlerDescr[messageClass][messageId].minimumPayloadLength;
         if (handlerMinimumPayloadLength === undefined)
           handlerMinimumPayloadLength = 0;  /* If no minimum size was provided by handler, just assume 0 */
         if (bufferLength < handlerMinimumPayloadLength + 4) { /* Redo the buffer length check, not on packet data but on minimum values provided by the handler */
           resultNeedsMoreBytes = 4 + handlerMinimumPayloadLength - bufferLength;
         }
         else {  /* If we reach here, we know that we should at least have the minimum bytes (indicated by .handlerMinimumPayloadLength) in the buffer to start decoding */
-          let responseName = bgapiResponses.Responses[messageClass][messageId].name;
-          if (bgapiResponses.Responses[messageClass][messageId].handler === undefined) {
-            console.error('No handler for response message ' + responseName);
+          let interpretedMessageName = incomingMessageHandlerDescr[messageClass][messageId].name;
+          if (incomingMessageHandlerDescr[messageClass][messageId].handler === undefined) {
+            console.error('No handler for ' + incomingMessageName + ' message ' + interpretedMessageName);
           }
           else {
-            let handlerName = bgapiResponses.Responses[messageClass][messageId].name;
+            let handlerName = incomingMessageHandlerDescr[messageClass][messageId].name;
             if (DEBUG) {
               console.debug('Will invoke handler for ' + handlerName + ' with args:');
               console.debug(buffer.slice(4));
             }
             /* Invoke handler, removing the 4 header bytes */
             /* Note that, because buffer is an array, during this call to the handler each byte will be sent to the handler as a separate argument */
-            let handlerResult = bgapiResponses.Responses[messageClass][messageId].handler.apply(this, buffer.slice(4));
+            let handlerResult = incomingMessageHandlerDescr[messageClass][messageId].handler.apply(this, buffer.slice(4));
             if (DEBUG) {
               console.debug('Handler result:');
               console.debug(handlerResult);
@@ -134,7 +155,7 @@ function decodeResponse(buffer) {
                 console.warn('Unstructured response from handler assumed to be the raw result:');
                 console.warn(handlerResult);
                 resultDecodedPacket = handlerResult;
-                console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from Responses definition: ' + handlerMinimumPayloadLength);
+                console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from ' + incomingMessageName + 's definition: ' + handlerMinimumPayloadLength);
                 resultEatenBytes += handlerMinimumPayloadLength;
               }
               else {  /* We have at least one attribute set among .eatenBytes, .needsMoreBytes or .decodedPacket */
@@ -146,7 +167,7 @@ function decodeResponse(buffer) {
                 if (!(handlerResult.eatenBytes === undefined))
                   resultEatenBytes += handlerResult.eatenBytes; /* Take bytes eaten by handler into account */
                 else {
-                  console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from Responses definition: ' + handlerMinimumPayloadLength);
+                  console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from ' + incomingMessageName + 's definition: ' + handlerMinimumPayloadLength);
                   resultEatenBytes += handlerMinimumPayloadLength;
                 }
                 
@@ -160,14 +181,14 @@ function decodeResponse(buffer) {
             }
             else {
               console.warn('No result returned by handler ' + handlerName);
-              console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from Responses definition: ' + handlerMinimumPayloadLength);
+              console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from ' + incomingMessageName + 's definition: ' + handlerMinimumPayloadLength);
               resultEatenBytes += handlerMinimumPayloadLength;
             }
           }
         }
       }
       else {
-        console.warn('No response handler found for messageClass=0x' + bgapiUtils.UInt8ToHexStr(messageClass) + ' & messageId=0x' + bgapiUtils.UInt8ToHexStr(messageId));
+        console.warn('No ' + incomingMessageName + ' handler found for messageClass=0x' + bgapiUtils.UInt8ToHexStr(messageClass) + ' & messageId=0x' + bgapiUtils.UInt8ToHexStr(messageId));
       }
     }
   }
@@ -180,108 +201,23 @@ function decodeResponse(buffer) {
 }
 
 /**
+ * @brief Decode a response buffer
+ *
+ * @param buffer A Buffer object to decode (possibly too short, or with trailing bytes)
+ * @return An object containing the result of the decoding process
+**/
+function decodeResponse(buffer) {
+  return decodeGeneric(buffer, bgapiDefs.MessageTypes.Response);
+}
+
+/**
  * @brief Decode an event buffer
  *
  * @param buffer A Buffer object to decode (possibly too short, or with trailing bytes)
  * @return An object containing the result of the decoding process
 **/
 function decodeEvent(buffer) {
-  console.log('Decoding event packet ' + buffer.toString('hex'));
-  let bufferLength = buffer.length;
-  let resultNeedsMoreBytes = 0;
-  let resultEatenBytes = 0;
-  let resultDecodedPacket = {};
-  if (bufferLength<4) {
-    resultNeedsMoreBytes = 4 - bufferLength;
-  }
-  else {
-    if (buffer[0] != bgapiDefs.MessageTypes.Event) {
-      throw new Error("Invalid event buffer: " + buffer.toString('hex'));
-    }
-    resultEatenBytes += 4;
-    let minimumPayloadLength = buffer[1];
-    let messageClass = buffer[2];
-    let messageId = buffer[3];
-    if (bufferLength < minimumPayloadLength + 4) {  /* Byte 3 tells us the minimum size of the packet, so we can already guess if we don't have enough bytes */
-      resultNeedsMoreBytes = 4 + minimumPayloadLength - bufferLength;
-    }
-    else {
-      if (bgapiEvents.Events[messageClass] && bgapiEvents.Events[messageClass][messageId]) {
-        let handlerMinimumPayloadLength = bgapiEvents.Events[messageClass][messageId].minimumPayloadLength;
-        if (handlerMinimumPayloadLength === undefined)
-          handlerMinimumPayloadLength = 0;  /* If no minimum size was provided by handler, just assume 0 */
-        if (bufferLength < handlerMinimumPayloadLength + 4) { /* Redo the buffer length check, not on packet data but on minimum values provided by the handler */
-          resultNeedsMoreBytes = 4 + handlerMinimumPayloadLength - bufferLength;
-        }
-        else {
-          let eventName = bgapiEvents.Events[messageClass][messageId].name;
-          if (bgapiEvents.Events[messageClass][messageId].handler === undefined) {
-            console.error('No handler for event message ' + eventName);
-          }
-          else {
-            let handlerName = bgapiEvents.Events[messageClass][messageId].name;
-            if (DEBUG) {
-              console.debug('Will invoke handler for ' + handlerName + ' with args:');
-              console.debug(buffer.slice(4));
-            }
-            /* Invoke handler, removing the 4 header bytes */
-            /* Note that, because buffer is an array, during this call to the handler each byte will be sent to the handler as a separate argument */
-            let handlerResult = bgapiEvents.Events[messageClass][messageId].handler.apply(this, buffer.slice(4));
-            if (DEBUG) {
-              console.debug('Handler result:');
-              console.debug(handlerResult);
-            }
-            if (handlerResult) {
-              if (handlerResult.eatenBytes === undefined &&
-                  handlerResult.needsMoreBytes === undefined &&
-                  handlerResult.decodedPacket === undefined) {  /* Simple handlers can avoid providing eatenBytes or needsMoreBytes, nor decodedPacket */
-                /* In such case, they directly return the decodedPacket */
-                console.warn('Unstructured event from handler assumed to be the raw result:');
-                console.warn(handlerResult);
-                resultDecodedPacket = handlerResult;
-                console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from Events definition: ' + handlerMinimumPayloadLength);
-                resultEatenBytes += handlerMinimumPayloadLength;
-              }
-              else {  /* We have at least one attribute set among .eatenBytes, .needsMoreBytes or .decodedPacket */
-                if (DEBUG) {
-                  console.log('Handler ' + handlerName + ' was run, result is:');
-                  console.log(handlerResult);
-                }
-                
-                if (!(handlerResult.eatenBytes === undefined))
-                  resultEatenBytes += handlerResult.eatenBytes; /* Take bytes eaten by handler into account */
-                else {
-                  console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from Events definition: ' + handlerMinimumPayloadLength);
-                  resultEatenBytes += handlerMinimumPayloadLength;
-                }
-                
-                if (!(handlerResult.needsMoreBytes === undefined))
-                  resultNeedsMoreBytes += handlerResult.needsMoreBytes; /* Take bytes needed by handler to complete decoding into account */
-                else
-                  console.warn('No .needsMoreBytes attribute was provided by handler ' + handlerName);
-                
-                resultDecodedPacket = handlerResult.decodedPacket;  /* For full feedback handlers, extract only the decodedPacket field */
-              }
-            }
-            else {
-              console.warn('No result returned by handler ' + handlerName);
-              console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from Events definition: ' + handlerMinimumPayloadLength);
-              resultEatenBytes += handlerMinimumPayloadLength;
-            }
-          }
-        }
-      }
-      else {
-        console.warn('No event handler found for messageClass=0x' + UInt8ToHexStr(messageClass) + ' & messageId=0x' + UInt8ToHexStr(messageId));
-      }
-    }
-  }
-  let result = { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket, needsMoreBytes: resultNeedsMoreBytes };
-  if (DEBUG) {
-    console.debug('Returning:');
-    console.debug(result);
-  }
-  return result;
+  return decodeGeneric(buffer, bgapiDefs.MessageTypes.Event);
 }
 
 /**
