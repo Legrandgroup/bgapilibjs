@@ -80,13 +80,12 @@ function getCommand(commandName) {
  * @note This code is common for events or response
  *
  * @param buffer A Buffer object to decode (possibly too short, or with trailing bytes)
- * @param incomingMessageType one of the possible value of incomingMessageCategoryType enum
  * @return An object containing the result of the decoding process
 **/
-function decodeGeneric(buffer, incomingMessageType) {
+function decodeBuffer(buffer) {
   let incomingMessageName;
   let incomingMessageHandlerDescr;
-  switch (incomingMessageType) {
+  switch (buffer[0]) {
     case bgapiDefs.MessageTypes.Response:
       incomingMessageName = 'response';
       incomingMessageHandlerDescr = bgapiResponses.Responses;
@@ -96,7 +95,7 @@ function decodeGeneric(buffer, incomingMessageType) {
       incomingMessageHandlerDescr = bgapiEvents.Events;
       break;
     default:
-      throw new Error("Unknown message type: " + incomingMessageType);
+      throw new Error("Unknown message type: 0x" + bgapiDefs.UInt8ToHexStr(buffer[0]));
   }
   /* The code below is generic and processes indifferently response or event messages */
   /* incomingMessageName is a the human-friendly string representation type of the message (for logging purposes) */
@@ -111,9 +110,6 @@ function decodeGeneric(buffer, incomingMessageType) {
     resultNeedsMoreBytes = 4 - bufferLength;
   }
   else {
-    if (buffer[0] != incomingMessageType) {
-      throw new Error('Invalid ' + incomingMessageName + ' buffer: ' + buffer.toString('hex'));
-    }
     resultEatenBytes += 4;
     let minimumPayloadLength = buffer[1];
     let messageClass = buffer[2];
@@ -201,43 +197,6 @@ function decodeGeneric(buffer, incomingMessageType) {
 }
 
 /**
- * @brief Decode a response buffer
- *
- * @param buffer A Buffer object to decode (possibly too short, or with trailing bytes)
- * @return An object containing the result of the decoding process
-**/
-function decodeResponse(buffer) {
-  return decodeGeneric(buffer, bgapiDefs.MessageTypes.Response);
-}
-
-/**
- * @brief Decode an event buffer
- *
- * @param buffer A Buffer object to decode (possibly too short, or with trailing bytes)
- * @return An object containing the result of the decoding process
-**/
-function decodeEvent(buffer) {
-  return decodeGeneric(buffer, bgapiDefs.MessageTypes.Event);
-}
-
-/**
- * @brief Decode an incoming byte buffer
- *
- * @param buffer The buffer to decode (possibly too short, or with trailing bytes)
- * @return An object containing the result of the decoding process or undefined if no decoding could be performed
-**/
-function decodeBuffer(buffer) {
-  if (buffer[0] == bgapiDefs.MessageTypes.Response) {
-    return decodeResponse(buffer);
-  }
-  else if (buffer[0] == bgapiDefs.MessageTypes.Event) {
-    return decodeEvent(buffer);
-  }
-  else
-    return undefined;
-}
-
-/**
  * @brief Check if a buffer starts with a valid response or event signature
  *
  * @param buffer The buffer to check
@@ -268,34 +227,34 @@ function resetParser() {
  *         result is the decoded packet from the buffer
 **/
 function tryDecode(buffer, callback) {
-  result = decodeBuffer(buffer);
-  if (result === undefined) {
+  try {
+    result = decodeBuffer(buffer);
+  }
+  catch (exception) {
     throw new Error('Failure decoding buffer ' + buffer.toString('hex'));
   }
+  if (!(result.needsMoreBytes === undefined) && result.needsMoreBytes > 0) {
+    console.log('Missing at least ' + result.needsMoreBytes + ' more byte(s) to decode');
+    callback && callback(result.needsMoreBytes);
+    return [buffer, undefined];
+  }
   else {
-    if (!(result.needsMoreBytes === undefined) && result.needsMoreBytes > 0) {
-      console.log('Missing at least ' + result.needsMoreBytes + ' more byte(s) to decode');
-      callback && callback(result.needsMoreBytes);
-      return [buffer, undefined];
+    if (result.eatenBytes <= 0) {
+      throw new Error('No byte processed at the beginning of buffer ' + buffer.toString('hex'));
     }
-    else {
-      if (result.eatenBytes <= 0) {
-        throw new Error('No byte processed at the beginning of buffer ' + buffer.toString('hex'));
+    else {  /* Message has been parsed (eatenBytes>0) */
+      if (DEBUG) {
+        console.log(result.eatenBytes + ' bytes used by handler, removing them from the head of the current buffer');
+        console.log('Buffer was: ' + buffer.toString('hex'));
       }
-      else {  /* Message has been parsed (eatenBytes>0) */
-        if (DEBUG) {
-          console.log(result.eatenBytes + ' bytes used by handler, removing them from the head of the current buffer');
-          console.log('Buffer was: ' + buffer.toString('hex'));
-        }
-        buffer = buffer.slice(result.eatenBytes); /* Cut the first bytes that have now been decoded */
-        if (DEBUG) {
-          if (buffer.length>0)
-            console.log('Buffer is now: ' + buffer.toString('hex'));
-          else
-            console.log('Buffer is now empty');
-        }
-        return [buffer, result.decodedPacket];  /* Good decode, return it with the new buffer where decoded bytes have been removed from the head */
+      buffer = buffer.slice(result.eatenBytes); /* Cut the first bytes that have now been decoded */
+      if (DEBUG) {
+        if (buffer.length>0)
+          console.log('Buffer is now: ' + buffer.toString('hex'));
+        else
+          console.log('Buffer is now empty');
       }
+      return [buffer, result.decodedPacket];  /* Good decode, return it with the new buffer where decoded bytes have been removed from the head */
     }
   }
 }

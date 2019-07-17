@@ -131,3 +131,19 @@ catch(exception) {
 }
 assert(callbackExecuted, 'Expected a call to callback function');
 assert(exceptionRaised, 'Expected an exception propagated to us');
+
+console.log('=== Testing error returned in callback when buffer is not synchronized');
+bgapi.resetParser();
+callbackExecuted = false;
+bgapi.parseIncoming(Buffer.from([0x77, 0x07, 0x14, 0x00, 0x00]), function(err, packets, nbMoreBytesNeeded) {
+        if (!err)
+            callbackExecuted = true;
+    }
+);
+assert(!callbackExecuted, 'Expected no call to callback function without an error');
+
+/* Add unit test to check content of internal buffer */
+/* Add unit test to check reset of state and then content */
+/* Add unit test to check reset of state and when first a few good bytes are sent, then reset then, send a proper buffer to check it is decoded */
+/* Add unit test when message ID is unkown to check exception is not fired back to caller */
+/* Add unit test that we get called with err set when buffer is desynchronized */
