@@ -265,7 +265,7 @@ function tryDecode(buffer, callback) {
  * @param incomingBytes A Buffer of new incoming bytes
  * @param callback A function with 3 arguments: function(err, packets, nbMoreBytesNeeded) where:
  *        err Will be an Error message if decoding failed (desynchronized buffer of undecodable content), or null if there was no error
- *        packets will be an array of successfully decoded packets, [] if there is no proper packet to decode (yet, and in this case, nbMoreBytesNeeded will be set) or null if errors were encountered
+ *        packet is a successfully decoded packet, or null if there is no proper packet to decode (yet, and in this case, nbMoreBytesNeeded will be set) or if errors were encountered (in such case err is non null)
  *        nbMoreBytesNeeded is an estimation of the minimum additional bytes needed to properly decode the buffer
  *
  * @note The callback function may be invoked multiple times depending on how the process goes (often invoked several times on desynchronized buffer)
