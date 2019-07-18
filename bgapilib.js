@@ -348,6 +348,19 @@ function parseIncoming(incomingBytes, callback) {
   }
 }
 
+/**
+ * @brief Retrieve the current receive buffer (that has been built so far by subsequent calls to parseIncoming()
+ *
+ * @return The receive buffer
+ *
+ * @note Once bytes are used to successfully decode BGAPI messages, they are removed from the buffer),
+ *       also, calls to resetParser() will flush the receive buffer
+**/
+function getCurrentRxBuffer() {
+  return bgapiRXBuffer;
+}
+
 module.exports.resetParser = resetParser;
 module.exports.getCommand = getCommand;
 module.exports.parseIncoming = parseIncoming;
+module.exports.getCurrentRxBuffer = getCurrentRxBuffer;
