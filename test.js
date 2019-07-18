@@ -165,6 +165,70 @@ catch(exception) {
 assert(callbackExecuted, 'Expected a call to callback function');
 assert(exceptionRaised, 'Expected an exception propagated to us');
 
-/* Add unit test to check content of internal buffer */
-/* Add unit test to check reset of state and then content */
-/* Add unit test to check reset of state and when first a few good bytes are sent, then reset then, send a proper buffer to check it is decoded */
+console.log('=== Testing buffer flush and check');
+bgapi.resetParser();
+bgapi.parseIncoming(Buffer.from([0x20]), function(err, packet, nbMoreBytesNeeded) {
+        assert(packet == null, 'Expected no result yet (partial buffer)');
+    }
+);
+assert(bgapi.getCurrentRxBuffer().equals(Buffer.from([0x20])), 'Failure on check internal receive buffer');
+bgapi.resetParser();
+/* Queue a partial response message */
+bgapi.parseIncoming(Buffer.from([0x20, 0x02, 0x0D, 0x01]), function(err, packet, nbMoreBytesNeeded) {
+        assert(packet == null, 'Expected no result yet (partial buffer)');
+    }
+);
+assert(bgapi.getCurrentRxBuffer().equals(Buffer.from([0x20, 0x02, 0x0D, 0x01])), 'Failure on check internal receive buffer');
+callbackExecuted = false;
+/* Queue the rest of the response message */
+bgapi.parseIncoming(Buffer.from([0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
+        callbackExecuted = true;
+        assert(!err, "Expected no error");
+        assert(packet.result == 'success', 'Error on result (expecting success)');
+        if (!err)
+            console.log(packet);
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');
+assert(bgapi.getCurrentRxBuffer().equals(Buffer.from([])), 'Expected an empty internal receive buffer');
+
+console.log('=== Testing parseIncomingMultiple() with two events simultaneously received');
+callbackExecuted = false;
+bgapi.resetParser();
+packet = bgapi.getCommand('system_reset', 0);
+assert(packet.equals(Buffer.from([0x20, 0x01, 0x01, 0x01, 0x00])), 'Expected another payload for command cmd_system_reset. Got: ' + packet.toString('hex'));
+event1 = Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]);
+event2 = Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]);
+event3 = Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]);
+tripleEvents = Buffer.concat([event1, event2, event3]);
+bgapi.parseIncomingMultiple(tripleEvents, function(err, packets, nbMoreBytesNeeded) {
+        callbackExecuted = true;
+        console.log('Running callback for rsp_system_reset');
+        console.log('Packets is:');
+        console.log(packets);
+        assert(packets.length==3, 'Expecting 3 packets in the buffer');
+        assert(packets[0].major == 1, 'Error on decoded major version');
+        assert(packets[0].minor == 1, 'Error on decoded minor version');
+        assert(packets[1].major == 2, 'Error on decoded major version');
+        assert(packets[1].minor == 2, 'Error on decoded minor version');
+        assert(packets[2].major == 3, 'Error on decoded major version');
+        assert(packets[2].minor == 3, 'Error on decoded minor version');
+        assert(packets[0].patch == 0, 'Error on decoded patch version');
+        assert(packets[1].patch == 0, 'Error on decoded patch version');
+        assert(packets[2].patch == 0, 'Error on decoded patch version');
+        assert(packets[0].build == 65534, 'Error on decoded build version');
+        assert(packets[1].build == 65534, 'Error on decoded build version');
+        assert(packets[2].build == 65534, 'Error on decoded build version');
+        assert(packets[0].bootloader == 0, 'Error on decoded bootloader version');
+        assert(packets[1].bootloader == 0, 'Error on decoded bootloader version');
+        assert(packets[2].bootloader == 0, 'Error on decoded bootloader version');
+        assert(packets[0].hw == 1, 'Error on decoded hw version');
+        assert(packets[1].hw == 2, 'Error on decoded hw version');
+        assert(packets[2].hw == 3, 'Error on decoded hw version');
+        assert(packets[0].hash == 3828121568, 'Error on decoded hash version');
+        assert(packets[1].hash == 3828121568, 'Error on decoded hash version');
+        assert(packets[2].hash == 3828121568, 'Error on decoded hash version');
+        assert(!err, "Expected no error");
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');

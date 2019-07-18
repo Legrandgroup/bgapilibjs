@@ -379,7 +379,7 @@ function parseIncomingMultiple(incomingBytes, callback) {
     }
   );
   
-  if (queuedPackets.size()>0) {
+  if (queuedPackets.length>0) {
     callback && callback(null, queuedPackets, queuedNbMoreBytesNeeded);
   }
   else if (queuedError) { /* Errors will be sent to callback only if there is absolutely no packet decoded */
