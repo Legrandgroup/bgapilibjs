@@ -349,6 +349,48 @@ function parseIncoming(incomingBytes, callback) {
 }
 
 /**
+ * @brief Add incoming bytes to the receiving buffer and try to decode as many messages as possible inside the current buffer
+ *
+ * @param incomingBytes A Buffer of new incoming bytes
+ * @param callback A function with 3 arguments: function(err, packets, nbMoreBytesNeeded) where:
+ *        err Will be an Error message describing issues during decoding (desynchronized buffer of undecodable content), it will be non null only if no packet could be decoded at all, but errors will be muted otherwise
+ *        packets is an array of successfully decoded packet, or null if there was no packet decoded at all (yet, and in this case, nbMoreBytesNeeded will be set) or if errors were encountered (in such case err is non null)
+ *        nbMoreBytesNeeded is an estimation of the minimum additional bytes needed to properly decode the buffer
+ *
+ * @note The callback function will be invoked exactly and only once with an array of all successfully decoded packets or with error conditions, except where an exception is raised, when it might not be invoked at all.
+**/
+function parseIncomingMultiple(incomingBytes, callback) {
+  let queuedPackets = []
+  let queuedError = null;
+  let queuedNbMoreBytesNeeded = 0;
+  
+  parseIncoming(incomingBytes, function(err, packet, nbMoreBytesNeeded) {
+      if (err)
+        queuedError = err;
+      else {
+        if (packet == null) {  /* No packet was decoded */
+          if (nbMoreBytesNeeded>0)
+            queuedNbMoreBytesNeeded = nbMoreBytesNeeded;
+        }
+        else {
+          queuedPackets.push(packet);
+        }
+      }
+    }
+  );
+  
+  if (queuedPackets.size()>0) {
+    callback && callback(null, queuedPackets, queuedNbMoreBytesNeeded);
+  }
+  else if (queuedError) { /* Errors will be sent to callback only if there is absolutely no packet decoded */
+    callback && callback(queuedError, null, queuedNbMoreBytesNeeded);
+  }
+  else if (queuedNbMoreBytesNeeded>0) {
+    callback && callback(null, null, queuedNbMoreBytesNeeded);
+  }
+}
+
+/**
  * @brief Retrieve the current receive buffer (that has been built so far by subsequent calls to parseIncoming()
  *
  * @return The receive buffer
@@ -363,4 +405,5 @@ function getCurrentRxBuffer() {
 module.exports.resetParser = resetParser;
 module.exports.getCommand = getCommand;
 module.exports.parseIncoming = parseIncoming;
+module.exports.parseIncomingMultiple = parseIncomingMultiple;
 module.exports.getCurrentRxBuffer = getCurrentRxBuffer;
