@@ -83,25 +83,25 @@ function getCommand(commandName) {
  * @return An object containing the result of the decoding process
 **/
 function decodeBuffer(buffer) {
-  let incomingMessageName;
+  let incomingMessageType;
   let incomingMessageHandlerDescr;
   switch (buffer[0]) {
     case bgapiDefs.MessageTypes.Response:
-      incomingMessageName = 'response';
+      incomingMessageType = 'response';
       incomingMessageHandlerDescr = bgapiResponses.Responses;
       break;
     case bgapiDefs.MessageTypes.Event:
-      incomingMessageName = 'event';
+      incomingMessageType = 'event';
       incomingMessageHandlerDescr = bgapiEvents.Events;
       break;
     default:
       throw new Error("Unknown message type: 0x" + bgapiDefs.UInt8ToHexStr(buffer[0]));
   }
   /* The code below is generic and processes indifferently response or event messages */
-  /* incomingMessageName is a the human-friendly string representation type of the message (for logging purposes) */
+  /* incomingMessageType is a the human-friendly string representation type of the message (for logging purposes) */
   /* incomingMessageHandlerDescr is an alias for the message handler description (either bgapiResponses.Responses or bgapiResponses.Events) */
   
-  console.log('Decoding ' + incomingMessageName + ' packet ' + buffer.toString('hex'));
+  console.log('Decoding ' + incomingMessageType + ' packet ' + buffer.toString('hex'));
   let bufferLength = buffer.length;
   let resultNeedsMoreBytes = 0;
   let resultEatenBytes = 0;
@@ -128,7 +128,7 @@ function decodeBuffer(buffer) {
         else {  /* If we reach here, we know that we should at least have the minimum bytes (indicated by .handlerMinimumPayloadLength) in the buffer to start decoding */
           let interpretedMessageName = incomingMessageHandlerDescr[messageClass][messageId].name;
           if (incomingMessageHandlerDescr[messageClass][messageId].handler === undefined) {
-            console.error('No handler for ' + incomingMessageName + ' message ' + interpretedMessageName);
+            console.error('No handler for ' + incomingMessageType + ' message ' + interpretedMessageName);
           }
           else {
             let handlerName = incomingMessageHandlerDescr[messageClass][messageId].name;
@@ -151,7 +151,7 @@ function decodeBuffer(buffer) {
                 console.warn('Unstructured response from handler assumed to be the raw result:');
                 console.warn(handlerResult);
                 resultDecodedPacket = handlerResult;
-                console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from ' + incomingMessageName + 's definition: ' + handlerMinimumPayloadLength);
+                console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from ' + incomingMessageType + 's definition: ' + handlerMinimumPayloadLength);
                 resultEatenBytes += handlerMinimumPayloadLength;
               }
               else {  /* We have at least one attribute set among .eatenBytes, .needsMoreBytes or .decodedPacket */
@@ -163,7 +163,7 @@ function decodeBuffer(buffer) {
                 if (!(handlerResult.eatenBytes === undefined))
                   resultEatenBytes += handlerResult.eatenBytes; /* Take bytes eaten by handler into account */
                 else {
-                  console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from ' + incomingMessageName + 's definition: ' + handlerMinimumPayloadLength);
+                  console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from ' + incomingMessageType + 's definition: ' + handlerMinimumPayloadLength);
                   resultEatenBytes += handlerMinimumPayloadLength;
                 }
                 
@@ -177,14 +177,14 @@ function decodeBuffer(buffer) {
             }
             else {
               console.warn('No result returned by handler ' + handlerName);
-              console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from ' + incomingMessageName + 's definition: ' + handlerMinimumPayloadLength);
+              console.error('No .eatenBytes attribute was provided by handler ' + handlerName + '. Using the preconfigured value from ' + incomingMessageType + 's definition: ' + handlerMinimumPayloadLength);
               resultEatenBytes += handlerMinimumPayloadLength;
             }
           }
         }
       }
       else {
-        console.warn('No ' + incomingMessageName + ' handler found for messageClass=0x' + bgapiUtils.UInt8ToHexStr(messageClass) + ' & messageId=0x' + bgapiUtils.UInt8ToHexStr(messageId));
+        console.warn('No ' + incomingMessageType + ' handler found for messageClass=0x' + bgapiUtils.UInt8ToHexStr(messageClass) + ' & messageId=0x' + bgapiUtils.UInt8ToHexStr(messageId));
       }
     }
   }
