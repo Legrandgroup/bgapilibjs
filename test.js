@@ -17,6 +17,38 @@ bgapi.parseIncoming(Buffer.from([0x00]), function(err, packets, nbMoreBytesNeede
 );
 assert(callbackExecuted, 'Expected a call to callback function with error');
 
+console.log('=== Testing error returned in callback when buffer is not synchronized');
+bgapi.resetParser();
+callbackExecuted = false;
+nbErrorReturned = 0;
+bgapi.parseIncoming(Buffer.from([0x77, 0x07, 0x14, 0x00, 0x00]), function(err, packets, nbMoreBytesNeeded) {
+        if (!err)
+            callbackExecuted = true;
+        else
+            nbErrorReturned++;
+    }
+);
+assert(!callbackExecuted, 'Expected no call to callback function without an error');
+assert(nbErrorReturned==5, 'Expected 5 callback calls with errors for 5 desynchronized bytes');
+
+console.log('=== Testing resynchronization immediately after a reset');
+bgapi.resetParser();
+errorReturned = false;
+bgapi.parseIncoming(Buffer.from([0x77, 0x07]), function(err, packets, nbMoreBytesNeeded) {
+        if (err)
+            errorReturned = true;
+    }
+);
+assert(errorReturned, 'Expected call to callback with error (desynchronized bytes)');
+callbackExecuted = false;
+bgapi.parseIncoming(Buffer.from([0x20, 0x02, 0x0D, 0x01, 0x00, 0x00]), function(err, packets, nbMoreBytesNeeded) {
+        callbackExecuted = true;
+        assert(!err, "Expected no error");
+        assert(packets.result == 'success', 'Error on result (expecting success)');
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');
+
 console.log('=== Testing handling for short incoming buffer...');
 bgapi.resetParser();
 callbackExecuted = false;
@@ -132,38 +164,6 @@ catch(exception) {
 }
 assert(callbackExecuted, 'Expected a call to callback function');
 assert(exceptionRaised, 'Expected an exception propagated to us');
-
-console.log('=== Testing error returned in callback when buffer is not synchronized');
-bgapi.resetParser();
-callbackExecuted = false;
-nbErrorReturned = 0;
-bgapi.parseIncoming(Buffer.from([0x77, 0x07, 0x14, 0x00, 0x00]), function(err, packets, nbMoreBytesNeeded) {
-        if (!err)
-            callbackExecuted = true;
-        else
-            nbErrorReturned++;
-    }
-);
-assert(!callbackExecuted, 'Expected no call to callback function without an error');
-assert(nbErrorReturned==5, 'Expected 5 callback calls with errors for 5 desynchronized bytes');
-
-console.log('=== Testing resynchronization immediately after a reset');
-bgapi.resetParser();
-errorReturned = false;
-bgapi.parseIncoming(Buffer.from([0x77, 0x07]), function(err, packets, nbMoreBytesNeeded) {
-        if (err)
-            errorReturned = true;
-    }
-);
-assert(errorReturned, 'Expected call to callback with error (desynchronized bytes)');
-callbackExecuted = false;
-bgapi.parseIncoming(Buffer.from([0x20, 0x02, 0x0D, 0x01, 0x00, 0x00]), function(err, packets, nbMoreBytesNeeded) {
-        callbackExecuted = true;
-        assert(!err, "Expected no error");
-        assert(packets.result == 'success', 'Error on result (expecting success)');
-    }
-);
-assert(callbackExecuted, 'Expected a call to callback function');
 
 /* Add unit test to check content of internal buffer */
 /* Add unit test to check reset of state and then content */
