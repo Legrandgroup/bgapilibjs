@@ -9,7 +9,7 @@ var callbackExecuted;
 console.log('=== Testing handling for unaligned buffer (unrecognized starting sequence)...');
 bgapi.resetParser();
 callbackExecuted = false;
-bgapi.parseIncoming(Buffer.from([0x00]), function(err, packet, nbMoreBytesNeeded) {
+bgapi.parseIncomingIterate(Buffer.from([0x00]), function(err, packet, nbMoreBytesNeeded) {
         assert(err, "Undetected too short and unaligned buffer.");
         assert(packet===null, "Returned packet should be null");
         callbackExecuted = true;
@@ -21,7 +21,7 @@ console.log('=== Testing error returned in callback when buffer is not synchroni
 bgapi.resetParser();
 callbackExecuted = false;
 nbErrorReturned = 0;
-bgapi.parseIncoming(Buffer.from([0x77, 0x07, 0x14, 0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
+bgapi.parseIncomingIterate(Buffer.from([0x77, 0x07, 0x14, 0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
         if (!err)
             callbackExecuted = true;
         else
@@ -34,14 +34,14 @@ assert(nbErrorReturned==5, 'Expected 5 callback calls with errors for 5 desynchr
 console.log('=== Testing resynchronization immediately after a reset');
 bgapi.resetParser();
 errorReturned = false;
-bgapi.parseIncoming(Buffer.from([0x77, 0x07]), function(err, packet, nbMoreBytesNeeded) {
+bgapi.parseIncomingIterate(Buffer.from([0x77, 0x07]), function(err, packet, nbMoreBytesNeeded) {
         if (err)
             errorReturned = true;
     }
 );
 assert(errorReturned, 'Expected call to callback with error (desynchronized bytes)');
 callbackExecuted = false;
-bgapi.parseIncoming(Buffer.from([0x20, 0x02, 0x0D, 0x01, 0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
+bgapi.parseIncomingIterate(Buffer.from([0x20, 0x02, 0x0D, 0x01, 0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
         callbackExecuted = true;
         assert(!err, "Expected no error");
         assert(packet.result == 'success', 'Error on result (expecting success)');
@@ -52,7 +52,7 @@ assert(callbackExecuted, 'Expected a call to callback function');
 console.log('=== Testing handling for short incoming buffer...');
 bgapi.resetParser();
 callbackExecuted = false;
-bgapi.parseIncoming(Buffer.from([0x20]), function(err, packet, nbMoreBytesNeeded) {
+bgapi.parseIncomingIterate(Buffer.from([0x20]), function(err, packet, nbMoreBytesNeeded) {
         assert(nbMoreBytesNeeded==3, "Expected request for 3 more bytes");
         callbackExecuted = true;
     }
@@ -62,7 +62,7 @@ assert(callbackExecuted, 'Expected a call to callback function with nbMoreBytesN
 console.log('=== Testing parsing for mesh_generic_server_init response with error code...');
 callbackExecuted = false;
 bgapi.resetParser();
-bgapi.parseIncoming(Buffer.from([0x20, 0x02, 0x1f, 0x04, 0x80, 0x01]), function(err, packet, nbMoreBytesNeeded) {
+bgapi.parseIncomingIterate(Buffer.from([0x20, 0x02, 0x1f, 0x04, 0x80, 0x01]), function(err, packet, nbMoreBytesNeeded) {
         assert(nbMoreBytesNeeded==0, "Expected no request for more bytes");
         assert(!err, "Expected no error");
         assert(packet.result == 'invalid_param', "Expected .result attribute == 'invalid_param', instead got: " + JSON.stringify(packet));
@@ -74,7 +74,7 @@ assert(callbackExecuted, 'Expected a call to callback function');
 console.log('=== Testing parsing for concatenated system_get_bt_address responses...');
 callbackExecuted = false;
 bgapi.resetParser();
-bgapi.parseIncoming(Buffer.from([0x00, 0x20, 0x06, 0x01, 0x03, 0x06, 0x05, 0xa4, 0x03, 0x02, 0x01, 0x20, 0x06, 0x01, 0x03, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01]), function(err, packet, nbMoreBytesNeeded) {
+bgapi.parseIncomingIterate(Buffer.from([0x00, 0x20, 0x06, 0x01, 0x03, 0x06, 0x05, 0xa4, 0x03, 0x02, 0x01, 0x20, 0x06, 0x01, 0x03, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01]), function(err, packet, nbMoreBytesNeeded) {
         callbackExecuted = true;
         if (!err)
             console.log(packet);
@@ -87,7 +87,7 @@ callbackExecuted = false;
 bgapi.resetParser();
 packet = bgapi.getCommand('system_reset', 0);
 assert(packet.equals(Buffer.from([0x20, 0x01, 0x01, 0x01, 0x00])), 'Expected another payload for command cmd_system_reset. Got: ' + packet.toString('hex'));
-bgapi.parseIncoming(Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x02, 0x00, 0x0C, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]), function(err, packet, nbMoreBytesNeeded) {
+bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x02, 0x00, 0x0C, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]), function(err, packet, nbMoreBytesNeeded) {
         callbackExecuted = true;
         console.log('Running callback for rsp_system_reset');
         assert(packet.major == 2, 'Error on decoded major version');
@@ -111,7 +111,7 @@ callbackExecuted = false;
 bgapi.resetParser();
 packet = bgapi.getCommand('flash_ps_erase_all');
 assert(packet.equals(Buffer.from([0x20, 0x00, 0x0D, 0x01])), 'Expected another payload for command cmd_flash_ps_erase_all. Got: ' + packet.toString('hex'));
-bgapi.parseIncoming(Buffer.from([0x20, 0x02, 0x0D, 0x01, 0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
+bgapi.parseIncomingIterate(Buffer.from([0x20, 0x02, 0x0D, 0x01, 0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
         callbackExecuted = true;
         assert(!err, "Expected no error");
         assert(packet.result == 'success', 'Error on result (expecting success)');
@@ -122,7 +122,7 @@ assert(callbackExecuted, 'Expected a call to callback function');
 console.log('=== Testing evt_mesh_node_provisioned');
 callbackExecuted = false;
 bgapi.resetParser();
-bgapi.parseIncoming(Buffer.from([0xA0, 0x06, 0x14, 0x01, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00]), function(err, packet, nbMoreBytesNeeded) {
+bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x06, 0x14, 0x01, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00]), function(err, packet, nbMoreBytesNeeded) {
         callbackExecuted = true;
         console.log('Running callback for evt_mesh_node_provisioned');
         assert(packet.iv_index == 0, 'Error on decoded iv_index');
@@ -135,7 +135,7 @@ assert(callbackExecuted, 'Expected a call to callback function');
 console.log('=== Testing evt_mesh_node_initialized');
 callbackExecuted = false;
 bgapi.resetParser();
-bgapi.parseIncoming(Buffer.from([0xA0, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
+bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
         callbackExecuted = true;
         console.log('Running callback for evt_mesh_node_initialized');
         assert(packet.provisioned, 'Error on decoded provisioned');
@@ -150,7 +150,7 @@ callbackExecuted = false;
 exceptionRaised = false;
 bgapi.resetParser();
 try {
-    bgapi.parseIncoming(Buffer.from([0xA0, 0x07, 0x14, 0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
+    bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x07, 0x14, 0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
             callbackExecuted = true;
             throw new Error('TestException');
         }
@@ -167,21 +167,21 @@ assert(exceptionRaised, 'Expected an exception propagated to us');
 
 console.log('=== Testing buffer flush and check');
 bgapi.resetParser();
-bgapi.parseIncoming(Buffer.from([0x20]), function(err, packet, nbMoreBytesNeeded) {
+bgapi.parseIncomingIterate(Buffer.from([0x20]), function(err, packet, nbMoreBytesNeeded) {
         assert(packet == null, 'Expected no result yet (partial buffer)');
     }
 );
 assert(bgapi.getCurrentRxBuffer().equals(Buffer.from([0x20])), 'Failure on check internal receive buffer');
 bgapi.resetParser();
 /* Queue a partial response message */
-bgapi.parseIncoming(Buffer.from([0x20, 0x02, 0x0D, 0x01]), function(err, packet, nbMoreBytesNeeded) {
+bgapi.parseIncomingIterate(Buffer.from([0x20, 0x02, 0x0D, 0x01]), function(err, packet, nbMoreBytesNeeded) {
         assert(packet == null, 'Expected no result yet (partial buffer)');
     }
 );
 assert(bgapi.getCurrentRxBuffer().equals(Buffer.from([0x20, 0x02, 0x0D, 0x01])), 'Failure on check internal receive buffer');
 callbackExecuted = false;
 /* Queue the rest of the response message */
-bgapi.parseIncoming(Buffer.from([0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
+bgapi.parseIncomingIterate(Buffer.from([0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
         callbackExecuted = true;
         assert(!err, "Expected no error");
         assert(packet.result == 'success', 'Error on result (expecting success)');

@@ -270,13 +270,13 @@ function tryDecode(buffer, callback) {
  *
  * @note The callback function may be invoked multiple times depending on how the process goes (often invoked several times on desynchronized buffer)
 **/
-function parseIncoming(incomingBytes, callback) {
+function parseIncomingIterate(incomingBytes, callback) {
   let rxBuffer = Buffer.concat([bgapiRXBuffer, incomingBytes]);
   let skippedBytes = 0;
   let goodDecode = false;
   let callbackException = null;
   
-  if (DEBUG) console.debug('Entering parseIncoming() with current RX buffer: ' + rxBuffer.toString('hex'));
+  if (DEBUG) console.debug('Entering parseIncomingIterate() with current RX buffer: ' + rxBuffer.toString('hex'));
   while (rxBuffer.length>0) {
     if (!validPacketStart(rxBuffer)) {
       if (goodDecode) { /* We are desynchronized, but we are right after a good decode... this is dodgy */
@@ -364,7 +364,7 @@ function parseIncomingMultiple(incomingBytes, callback) {
   let queuedError = null;
   let queuedNbMoreBytesNeeded = 0;
   
-  parseIncoming(incomingBytes, function(err, packet, nbMoreBytesNeeded) {
+  parseIncomingIterate(incomingBytes, function(err, packet, nbMoreBytesNeeded) {
       if (err)
         queuedError = err;
       else {
@@ -391,7 +391,7 @@ function parseIncomingMultiple(incomingBytes, callback) {
 }
 
 /**
- * @brief Retrieve the current receive buffer (that has been built so far by subsequent calls to parseIncoming()
+ * @brief Retrieve the current receive buffer (that has been built so far by subsequent calls to parseIncomingIterate()
  *
  * @return The receive buffer
  *
@@ -404,6 +404,6 @@ function getCurrentRxBuffer() {
 
 module.exports.resetParser = resetParser;
 module.exports.getCommand = getCommand;
-module.exports.parseIncoming = parseIncoming;
+module.exports.parseIncomingIterate = parseIncomingIterate;
 module.exports.parseIncomingMultiple = parseIncomingMultiple;
 module.exports.getCurrentRxBuffer = getCurrentRxBuffer;
