@@ -359,7 +359,7 @@ function parseIncomingIterate(incomingBytes, callback) {
  *
  * @note The callback function will be invoked exactly and only once with an array of all successfully decoded packets or with error conditions, except where an exception is raised, when it might not be invoked at all.
 **/
-function parseIncomingMultiple(incomingBytes, callback) {
+function parseIncoming(incomingBytes, callback) {
   let queuedPackets = []
   let queuedError = null;
   let queuedNbMoreBytesNeeded = 0;
@@ -405,5 +405,5 @@ function getCurrentRxBuffer() {
 module.exports.resetParser = resetParser;
 module.exports.getCommand = getCommand;
 module.exports.parseIncomingIterate = parseIncomingIterate;
-module.exports.parseIncomingMultiple = parseIncomingMultiple;
+module.exports.parseIncoming = parseIncoming;
 module.exports.getCurrentRxBuffer = getCurrentRxBuffer;

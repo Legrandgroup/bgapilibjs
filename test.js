@@ -192,7 +192,7 @@ bgapi.parseIncomingIterate(Buffer.from([0x00, 0x00]), function(err, packet, nbMo
 assert(callbackExecuted, 'Expected a call to callback function');
 assert(bgapi.getCurrentRxBuffer().equals(Buffer.from([])), 'Expected an empty internal receive buffer');
 
-console.log('=== Testing parseIncomingMultiple() with two events simultaneously received');
+console.log('=== Testing parseIncoming() with three 3 simultaneously received');
 callbackExecuted = false;
 bgapi.resetParser();
 packet = bgapi.getCommand('system_reset', 0);
@@ -201,7 +201,7 @@ event1 = Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00
 event2 = Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]);
 event3 = Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]);
 tripleEvents = Buffer.concat([event1, event2, event3]);
-bgapi.parseIncomingMultiple(tripleEvents, function(err, packets, nbMoreBytesNeeded) {
+bgapi.parseIncoming(tripleEvents, function(err, packets, nbMoreBytesNeeded) {
         callbackExecuted = true;
         console.log('Running callback for rsp_system_reset');
         console.log('Packets is:');
