@@ -283,3 +283,32 @@ bgapi.parseIncoming(Buffer.from([0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00,
     }
 );
 assert(callbackExecuted, 'Expected a call to callback function');
+
+console.log('=== Testing parseIncoming() on 2 packets decoded, but without 3rd arg (nbMoreBytesNeeded) in callback');
+callbackExecuted = false;
+bgapi.resetParser();
+event1 = Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]);
+event2 = Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]);
+suffix = Buffer.from([0xA0, 0x12]);
+tripleEvents = Buffer.concat([event1, event2, suffix]);
+bgapi.parseIncoming(tripleEvents, function(err, packets) {
+        assert(!err, 'Expecting no error feedback when at least one packet is decoded when calling parseIncoming()');
+        callbackExecuted = true;
+        console.log('Running callback for evt_system_boot');
+        console.log('Packets is:');
+        console.log(packets);
+        assert(packets.length==2, 'Expecting 2 packets in the buffer');
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');
+
+    console.log('=== Testing parseIncoming() on no packet decoded, but without 3rd arg (nbMoreBytesNeeded) in callback');
+callbackExecuted = false;
+bgapi.resetParser();
+bgapi.parseIncoming(Buffer.from([0xA0, 0x12]), function(err, packets) {
+        assert(!err, 'Expecting no error feedback when at least one packet is decoded when calling parseIncoming()');
+        callbackExecuted = true;
+        assert(packets == null || packets.length==0, 'Expecting no packets in the buffer');
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');
