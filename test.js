@@ -89,7 +89,7 @@ packet = bgapi.getCommand('system_reset', 0);
 assert(packet.equals(Buffer.from([0x20, 0x01, 0x01, 0x01, 0x00])), 'Expected another payload for command cmd_system_reset. Got: ' + packet.toString('hex'));
 bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x02, 0x00, 0x0C, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]), function(err, packet, nbMoreBytesNeeded) {
         callbackExecuted = true;
-        console.log('Running callback for rsp_system_reset');
+        console.log('Running callback for evt_system_boot');
         assert(packet.major == 2, 'Error on decoded major version');
         assert(packet.minor == 12, 'Error on decoded minor version');
         assert(packet.patch == 0, 'Error on decoded patch version');
@@ -195,15 +195,13 @@ assert(bgapi.getCurrentRxBuffer().equals(Buffer.from([])), 'Expected an empty in
 console.log('=== Testing parseIncoming() with three 3 simultaneously received');
 callbackExecuted = false;
 bgapi.resetParser();
-packet = bgapi.getCommand('system_reset', 0);
-assert(packet.equals(Buffer.from([0x20, 0x01, 0x01, 0x01, 0x00])), 'Expected another payload for command cmd_system_reset. Got: ' + packet.toString('hex'));
 event1 = Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]);
 event2 = Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]);
 event3 = Buffer.from([0xA0, 0x12, 0x01, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0xE0, 0x7F, 0x2C, 0xE4]);
 tripleEvents = Buffer.concat([event1, event2, event3]);
 bgapi.parseIncoming(tripleEvents, function(err, packets, nbMoreBytesNeeded) {
         callbackExecuted = true;
-        console.log('Running callback for rsp_system_reset');
+        console.log('Running callback for evt_system_boot');
         console.log('Packets is:');
         console.log(packets);
         assert(packets.length==3, 'Expecting 3 packets in the buffer');
