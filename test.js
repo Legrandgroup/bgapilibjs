@@ -145,6 +145,28 @@ bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00
 );
 assert(callbackExecuted, 'Expected a call to callback function');
 
+console.log('=== Testing that messageId is set in result for rsp_flash_ps_erase_all');
+callbackExecuted = false;
+bgapi.resetParser();
+bgapi.parseIncomingIterate(Buffer.from([0x20, 0x02, 0x0D, 0x01, 0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
+        callbackExecuted = true;
+        assert(!err, "Expected no error");
+        assert(packet.messageId == 'rsp_flash_ps_erase_all', 'Missing messageId rsp_flash_ps_erase_all');
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');
+
+console.log('=== Testing that messageId is set in result for evt_mesh_node_initialized');
+callbackExecuted = false;
+bgapi.resetParser();
+bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
+        callbackExecuted = true;
+        assert(!err, "Expected no error");
+        assert(packet.messageId == 'evt_mesh_node_initialized', 'Missing messageId evt_mesh_node_initialized');
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');
+
 console.log('=== Testing exception in callback when more bytes needed');
 callbackExecuted = false;
 exceptionRaised = false;

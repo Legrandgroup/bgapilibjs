@@ -4,7 +4,7 @@ const bgapiEvents = require('./bgapi-events.js');
 const bgapiCommands = require('./bgapi-commands.js');
 const bgapiUtils = require('./bgapi-utils.js');
 
-const DEBUG = false;  /* Set this to true to enable verbose debug to console */
+const DEBUG = true;  /* Set this to true to enable verbose debug to console */
 
 var bgapiRXBuffer = Buffer.alloc(0);
 var bgapiRXBufferPos = 0;
@@ -88,10 +88,12 @@ function decodeBuffer(buffer) {
   switch (buffer[0]) {
     case bgapiDefs.MessageTypes.Response:
       incomingMessageType = 'response';
+      incomingMessageNamePrefix = 'rsp_';
       incomingMessageHandlerDescr = bgapiResponses.Responses;
       break;
     case bgapiDefs.MessageTypes.Event:
       incomingMessageType = 'event';
+      incomingMessageNamePrefix = 'evt_';
       incomingMessageHandlerDescr = bgapiEvents.Events;
       break;
     default:
@@ -106,6 +108,7 @@ function decodeBuffer(buffer) {
   let resultNeedsMoreBytes = 0;
   let resultEatenBytes = 0;
   let resultDecodedPacket = {};
+  let identifiedMessageId = '';
   if (bufferLength<4) {
     resultNeedsMoreBytes = 4 - bufferLength;
   }
@@ -132,6 +135,7 @@ function decodeBuffer(buffer) {
           }
           else {
             let handlerName = incomingMessageHandlerDescr[messageClass][messageId].name;
+            identifiedMessageId = incomingMessageNamePrefix + handlerName;
             if (DEBUG) {
               console.debug('Will invoke handler for ' + handlerName + ' with args:');
               console.debug(buffer.slice(4));
@@ -188,7 +192,7 @@ function decodeBuffer(buffer) {
       }
     }
   }
-  let result = { eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket, needsMoreBytes: resultNeedsMoreBytes };
+  let result = { messageId: identifiedMessageId, eatenBytes: resultEatenBytes, decodedPacket: resultDecodedPacket, needsMoreBytes: resultNeedsMoreBytes };
   if (DEBUG) {
     console.debug('Returning:');
     console.debug(result);
@@ -254,6 +258,10 @@ function tryDecode(buffer, callback) {
         else
           console.log('Buffer is now empty');
       }
+      if (result.decodedPacket.messageId != undefined)
+        console.warn('messageId was already set in the result from handler, it will be overwritten anyway. Please fix the handler');
+      else
+        result.decodedPacket.messageId = result.messageId;  /* Transfer the detected message ID into the result */
       return [buffer, result.decodedPacket];  /* Good decode, return it with the new buffer where decoded bytes have been removed from the head */
     }
   }
