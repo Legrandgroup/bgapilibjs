@@ -79,4 +79,20 @@ Responses[bgapiDefs.Classes.PersitentStore] = {
   }
 }
 
+Responses[bgapiDefs.Classes.MeshNode] = {
+  0x08 : {
+    minimumPayloadLength : 2,
+    name : 'mesh_node_set_adv_event_filter',
+    handler : rsp_generic_16bit_result_code,
+  }
+}
+
+Responses[bgapiDefs.Classes.GenericAttributeProfileServer] = {
+  0x02 : {
+    minimumPayloadLength : 2,
+    name : 'gatt_server_write_attribute_value',
+    handler : rsp_generic_16bit_result_code,
+  }
+}
+
 module.exports.Responses = Responses;

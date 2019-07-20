@@ -23,6 +23,24 @@ function cmd_gatt_server_write_attribute_value(attribute, offset, value) {
 }
 
 /**
+ * @brief Implementation of command gatt_server_write_attribute_value
+ * @param mask A 16-bit value containing the Enabled advertising packet type as a bitmask
+ * @param gap_data_type A variable-length Buffer object containing the GAP data type
+**/
+function cmd_mesh_node_start_unprov_beaconing(mask, gap_data_type) {
+  if (typeof gap_data_type == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+    gap_data_type = Buffer.from(arguments, 2);  /* if this is the case, convert arguments back to a Buffer object to be able to process it, skipping the previous positional arguments */
+  if (typeof gap_data_type == 'string') /* We also permissively accept a string as gap_data_type (2nd parameter), we will then perform the transformation to a buffer ourselves */
+    gap_data_type = Buffer.from(gap_data_type);
+  resultHead = Buffer.alloc(3); /* Allocate 16-bits to carry mask, and one more byte to store the length of the byte array for gap_data_type */
+  resultHead.writeUInt16LE(mask, 0);
+  if (gap_data_type.length>255)
+    throw new Error('gap_data_type longer than 255 bytes: ' + gap_data_type.toString('hex'));
+  resultHead.writeUInt8(gap_data_type.length, 2);
+  return Buffer.concat([resultHead, gap_data_type]);
+}
+
+/**
  * @brief List of known command messages, expected encoding, and specific handlers if any
  *
  * Keys are the command official name as a string (taken from the BGAPI spec, but without the 'cmd_' prefix) (ie: cmd_system_reset is called 'system_reset')
@@ -51,6 +69,11 @@ const Commands = {
     handler : function(bearer) {
       return Buffer.from([bearer]);
     }
+  },
+  'mesh_node_set_adv_event_filter' : {
+    id : 0x08,
+    minimumPayloadLength : 3,
+    handler : cmd_mesh_node_start_unprov_beaconing,
   },
   'gatt_server_write_attribute_value' : {
     id : 0x02,
