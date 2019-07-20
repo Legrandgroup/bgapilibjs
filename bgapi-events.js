@@ -1,7 +1,7 @@
 const bgapiDefs = require('./bgapi-defs.js');
 
 /**
- * @brief Decoding handler for event  evt_system_boot
+ * @brief Decoding handler for event evt_system_boot
  * @param buffer A buffer containing the payload to decode associated with this message
  * @return A JSON object containing the decoded event
 **/
@@ -26,6 +26,43 @@ function evt_system_boot(buffer) {
     'hash': versionHash,
   }
   return {needsMoreBytes: 0, eatenBytes: 18, decodedPacket: result};
+}
+
+/**
+ * @brief Decoding handler for event evt_system_boot
+ * @param buffer A buffer containing the payload to decode associated with this message
+ * @return A JSON object containing the decoded event
+ *
+ * @note In the returned JSON object, the parameters entry is an object of type Buffer
+**/
+function evt_mesh_generic_server_client_request(buffer) {
+  if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+    buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+  console.log('evt_system_boot got a buffer: ' + buffer.toString('hex'));
+  let modelId = buffer.readUInt16LE(0);
+  let elementIndex = buffer.readUInt16LE(2);
+  let clientAddress = buffer.readUInt16LE(4);
+  let serverAddress = buffer.readUInt16LE(6);
+  let applicationKeyIndex = buffer.readUInt16LE(8);
+  let transition = buffer.readUInt32LE(10);
+  let delay = buffer.readUInt16LE(14);
+  let flags = buffer.readUInt16LE(16);
+  let type = buffer.readUInt8(18);
+  let parametersLen = buffer.readUInt8(19);
+  parameters = buffer.slice(20, 20 + parametersLen);
+  let result = {
+    'model_id': modelId,
+    'elem_index': elementIndex,
+    'client_address': clientAddress,
+    'server_address': serverAddress,
+    'appkey_index': applicationKeyIndex,
+    'transition': transition,
+    'delay': delay,
+    'flags': flags,
+    'type': type,
+    'parameters': parameters,
+  }
+  return {needsMoreBytes: 0, eatenBytes: 20+parametersLen, decodedPacket: result};
 }
 
 /**
@@ -90,6 +127,14 @@ Events[bgapiDefs.Classes.MeshNode] = {
     minimumPayloadLength : 0x02,
     name : 'mesh_node_provisioning_failed',
     handler : evt_generic_16bit_result_code,
+  },
+}
+
+Events[bgapiDefs.Classes.BluetoothMeshGenericServerModel] = {
+  0x00 : {
+    minimumPayloadLength : 0x14,
+    name : 'mesh_generic_server_client_request',
+    handler : evt_mesh_generic_server_client_request,
   },
 }
 
