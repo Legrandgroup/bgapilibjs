@@ -235,6 +235,8 @@ function tryDecode(buffer, callback) {
     result = decodeBuffer(buffer);
   }
   catch (exception) {
+    console.error('Caught an exception in buffer decoding handler: ');
+    console.error(exception.stack);
     throw new Error('Failure decoding buffer ' + buffer.toString('hex'));
   }
   if (!(result.needsMoreBytes === undefined) && result.needsMoreBytes > 0) {
