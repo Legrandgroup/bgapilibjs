@@ -29,6 +29,20 @@ function evt_system_boot(buffer) {
 }
 
 /**
+ * @brief Generic decoding handler for events carrying only one 16-bit result code
+ * @param buffer A buffer containing the payload to decode associated with this message
+ * @return A JSON object containing the decoded event
+**/
+function evt_generic_16bit_result_code(buffer) {
+  if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+    buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+  
+  /* We are sure to get at least 2 bytes here because minimumPayloadLength was set to 2 */
+  let resultAsStr = bgapiErrors.errorCodes[buffer.readUInt16LE(0)];
+  return {needsMoreBytes: 0, eatenBytes: 2, decodedPacket: { 'result': resultAsStr } };
+}
+
+/**
  * @brief Known event messages and associated handlers
  * 
  * This object must be populated with entries whose key is the message class (use the Class enum above)
@@ -66,7 +80,17 @@ Events[bgapiDefs.Classes.MeshNode] = {
         buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
       return {needsMoreBytes: 0, eatenBytes: 6, decodedPacket: { 'iv_index': buffer.readUInt32LE(0), 'address': buffer.readUInt16LE(4) } };
     }
-  }
+  },
+  0x06 : {
+    minimumPayloadLength : 0x02,
+    name : 'mesh_node_provisioning_started',
+    handler : evt_generic_16bit_result_code,
+  },
+  0x07 : {
+    minimumPayloadLength : 0x02,
+    name : 'mesh_node_provisioning_failed',
+    handler : evt_generic_16bit_result_code,
+  },
 }
 
 module.exports.Events = Events;
