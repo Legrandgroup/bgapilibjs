@@ -80,6 +80,16 @@ Responses[bgapiDefs.Classes.PersitentStore] = {
 }
 
 Responses[bgapiDefs.Classes.MeshNode] = {
+  0x00 : {
+    minimumPayloadLength : 2,
+    name : 'mesh_node_init',
+    handler : rsp_generic_16bit_result_code,
+  },
+  0x01 : {
+    minimumPayloadLength : 2,
+    name : 'mesh_node_start_unprov_beaconing',
+    handler : rsp_generic_16bit_result_code,
+  },
   0x08 : {
     minimumPayloadLength : 2,
     name : 'mesh_node_set_adv_event_filter',
