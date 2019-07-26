@@ -29,7 +29,7 @@ function evt_system_boot(buffer) {
 }
 
 /**
- * @brief Decoding handler for event evt_system_boot
+ * @brief Decoding handler for event evt_mesh_generic_server_client_request
  * @param buffer A buffer containing the payload to decode associated with this message
  * @return A JSON object containing the decoded event
  *
@@ -38,7 +38,7 @@ function evt_system_boot(buffer) {
 function evt_mesh_generic_server_client_request(buffer) {
   if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
     buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
-  console.log('evt_system_boot got a buffer: ' + buffer.toString('hex'));
+  console.log('evt_mesh_generic_server_client_request got a buffer: ' + buffer.toString('hex'));
   let modelId = buffer.readUInt16LE(0);
   let elementIndex = buffer.readUInt16LE(2);
   let clientAddress = buffer.readUInt16LE(4);
@@ -73,7 +73,7 @@ function evt_mesh_generic_server_client_request(buffer) {
 function evt_generic_16bit_result_code(buffer) {
   if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
     buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
-  
+
   /* We are sure to get at least 2 bytes here because minimumPayloadLength was set to 2 */
   let resultAsStr = bgapiErrors.errorCodes[buffer.readUInt16LE(0)];
   return {needsMoreBytes: 0, eatenBytes: 2, decodedPacket: { 'result': resultAsStr } };
@@ -81,7 +81,7 @@ function evt_generic_16bit_result_code(buffer) {
 
 /**
  * @brief Known event messages and associated handlers
- * 
+ *
  * This object must be populated with entries whose key is the message class (use the Class enum above)
  * The value of each entry is an object containing one entry per message decoded, using the message ID as the key.
  * Each entry contains an object desribing the event:
