@@ -167,6 +167,26 @@ bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x16, 0x1F, 0x00, 0x02, 0x10, 0x00
 );
 assert(callbackExecuted, 'Expected a call to callback function');
 
+console.log('=== Testing evt_mesh_generic_client_server_status');
+callbackExecuted = false;
+bgapi.resetParser();
+bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x14, 0x1E, 0x00, 0x02, 0x13, 0x00, 0x00, 0x00, 0xC0, 0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x04, 0xDD, 0xFF, 0xCD, 0xAB]), function(err, packet, nbMoreBytesNeeded) {
+        callbackExecuted = true;
+        console.log('Running callback for evt_mesh_generic_client_server_status');
+        console.log(packet);
+        assert(packet.model_id == 0x1302, 'Error on decoded model_id');
+        assert(packet.elem_index == 0, 'Error on decoded elem_index');
+        assert(packet.client_address == 0xc000, 'Error on decoded client_address');
+        assert(packet.server_address == 0x0015, 'Error on decoded server_address');
+        assert(packet.remaining == 0, 'Error on decoded remaining');
+        assert(packet.flags == 0, 'Error on decoded flags');
+        assert(packet.type == 0x80, 'Error on decoded type');
+        assert(Buffer.from([0xdd, 0xff, 0xcd, 0xab]).equals(packet.parameters), 'Error on decoded parameters (buffer)');
+        assert(!err, "Expected no error");
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');
+
 console.log('=== Testing that messageId is set in result for rsp_flash_ps_erase_all');
 callbackExecuted = false;
 bgapi.resetParser();

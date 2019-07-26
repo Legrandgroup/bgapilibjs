@@ -66,6 +66,39 @@ function evt_mesh_generic_server_client_request(buffer) {
 }
 
 /**
+ * @brief Decoding handler for event evt_mesh_generic_client_server_status
+ * @param buffer A buffer containing the payload to decode associated with this message
+ * @return A JSON object containing the decoded event
+ *
+ * @note In the returned JSON object, the parameters entry is an object of type Buffer
+**/
+function evt_mesh_generic_client_server_status(buffer) {
+  if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+    buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+  console.log('evt_mesh_generic_client_server_status got a buffer: ' + buffer.toString('hex'));
+  let modelId = buffer.readUInt16LE(0);
+  let elementIndex = buffer.readUInt16LE(2);
+  let clientAddress = buffer.readUInt16LE(4);
+  let serverAddress = buffer.readUInt16LE(6);
+  let remaining = buffer.readUInt32LE(8);
+  let flags = buffer.readUInt16LE(12);
+  let type = buffer.readUInt8(14);
+  let parametersLen = buffer.readUInt8(15);
+  parameters = buffer.slice(16, 16 + parametersLen);
+  let result = {
+    'model_id': modelId,
+    'elem_index': elementIndex,
+    'client_address': clientAddress,
+    'server_address': serverAddress,
+    'remaining': remaining,
+    'flags': flags,
+    'type': type,
+    'parameters': parameters,
+  }
+  return {needsMoreBytes: 0, eatenBytes: 16+parametersLen, decodedPacket: result};
+}
+
+/**
  * @brief Generic decoding handler for events carrying only one 16-bit result code
  * @param buffer A buffer containing the payload to decode associated with this message
  * @return A JSON object containing the decoded event
@@ -135,6 +168,14 @@ Events[bgapiDefs.Classes.BluetoothMeshGenericServerModel] = {
     minimumPayloadLength : 0x14,
     name : 'mesh_generic_server_client_request',
     handler : evt_mesh_generic_server_client_request,
+  },
+}
+
+Events[bgapiDefs.Classes.BluetoothMeshGenericClientModel] = {
+  0x00 : {
+    minimumPayloadLength : 0x10,
+    name : 'mesh_generic_client_server_status',
+    handler : evt_mesh_generic_client_server_status,
   },
 }
 
