@@ -318,6 +318,27 @@ Events[bgapiDefs.Classes.MeshNode] = {
   },
 }
 
+Events[bgapiDefs.Classes.BluetoothMeshProxyConnections] = {
+  0x00 : {
+    minimumPayloadLength : 0x4,
+    name : 'mesh_proxy_connected',
+    handler : function(buffer) {
+      if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+        buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+      return {needsMoreBytes: 0, eatenBytes: 4, decodedPacket: { 'handle': buffer.readUInt32LE(0) } };
+    }
+  },
+  0x01 : {
+    minimumPayloadLength : 0x6,
+    name : 'mesh_proxy_disconnected',
+    handler : function(buffer) {
+      if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+        buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+      return {needsMoreBytes: 0, eatenBytes: 6, decodedPacket: { 'handle': buffer.readUInt32LE(0), 'reason': buffer.readUInt16LE(4) } };
+    }
+  },
+}
+
 Events[bgapiDefs.Classes.BluetoothMeshHealthServerModel] = {
   0x00 : {
     minimumPayloadLength : 0x3,
