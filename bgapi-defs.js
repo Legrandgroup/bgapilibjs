@@ -12,6 +12,7 @@ const MessageTypes = {
 **/
 const Classes = {
   System : 0x01,
+  GenericAccessProfile : 0x03,
   ConnectionManagement : 0x08,
   PersitentStore : 0x0d,
   MeshNode : 0x14,
@@ -26,6 +27,7 @@ const Classes = {
 **/
 const PrefixToClass = {
   'system' : Classes.System,
+  'le_gap' : Classes.GenericAccessProfile,
   'le_connection' : Classes.ConnectionManagement,
   'flash_ps' : Classes.PersitentStore,
   'mesh_node' : Classes.MeshNode,

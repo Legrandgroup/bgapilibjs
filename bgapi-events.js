@@ -216,6 +216,18 @@ Events[bgapiDefs.Classes.System] = {
   }
 }
 
+Events[bgapiDefs.Classes.GenericAccessProfile] = {
+  0x01 : {
+    minimumPayloadLength : 0x1,
+    name : 'le_gap_adv_timeout',
+    handler : function(buffer) {
+      if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+        buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+      return {needsMoreBytes: 0, eatenBytes: 1, decodedPacket: { 'handle':  buffer.readUInt8(0) } };
+    }
+  }
+}
+
 Events[bgapiDefs.Classes.ConnectionManagement] = {
   0x00 : {
     minimumPayloadLength : 0x0b,
