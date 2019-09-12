@@ -162,6 +162,20 @@ bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x0B, 0x08, 0x00, 0xAB, 0xF4, 0x61
 );
 assert(callbackExecuted, 'Expected a call to callback function');
 
+console.log('=== Testing evt_mesh_node_config_set');
+callbackExecuted = false;
+bgapi.resetParser();
+bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x06,  0x14, 0x03, 0x42, 0x80, 0x00, 0x00, 0x01, 0x01]), function(err, packet, nbMoreBytesNeeded) {
+        callbackExecuted = true;
+        console.log('Running callback for evt_mesh_node_config_set');
+        assert(packet.id == 0x8042, 'Error on decoded id');
+        assert(packet.netkey_index == 0x0000, 'Error on decoded netkey_index');
+        assert(Buffer.from([0x01]).equals(packet.parameters), 'Error on decoded parameters (buffer)');
+        assert(!err, "Expected no error");
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');
+
 console.log('=== Testing evt_mesh_generic_server_client_request');
 callbackExecuted = false;
 bgapi.resetParser();

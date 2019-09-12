@@ -63,6 +63,29 @@ function evt_le_connection_opened(buffer) {
 }
 
 /**
+ * @brief Decoding handler for event evt_mesh_node_config_set
+ * @param buffer A buffer containing the payload to decode associated with this message
+ * @return A JSON object containing the decoded event
+ *
+ * @note In the returned JSON object, the parameters entry is an object of type Buffer
+**/
+function evt_mesh_node_config_set(buffer) {
+  if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+    buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+  console.log('evt_mesh_node_config_set got a buffer: ' + buffer.toString('hex'));
+  let id = buffer.readUInt16LE(0);
+  let netkeyIndex = buffer.readUInt16LE(2);
+  let parametersLen = buffer.readUInt8(4);
+  parameters = buffer.slice(5, 5 + parametersLen);
+  let result = {
+    'id': id,
+    'netkey_index': netkeyIndex,
+    'parameters': parameters,
+  }
+  return {needsMoreBytes: 0, eatenBytes: 5+parametersLen, decodedPacket: result};
+}
+
+/**
  * @brief Decoding handler for event evt_mesh_generic_server_client_request
  * @param buffer A buffer containing the payload to decode associated with this message
  * @return A JSON object containing the decoded event
@@ -248,6 +271,20 @@ Events[bgapiDefs.Classes.MeshNode] = {
       return {needsMoreBytes: 0, eatenBytes: 6, decodedPacket: { 'iv_index': buffer.readUInt32LE(0), 'address': buffer.readUInt16LE(4) } };
     }
   },
+  0x02 : {
+    minimumPayloadLength : 0x04,
+    name : 'mesh_node_config_get',
+    handler : function(buffer) {
+      if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+        buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+      return {needsMoreBytes: 0, eatenBytes: 4, decodedPacket: { 'id': buffer.readUInt16LE(0), 'netkey_index': buffer.readUInt16LE(2) } };
+    }
+  },
+  0x03 : {
+    minimumPayloadLength : 0x05,
+    name : 'mesh_node_config_set',
+    handler : evt_mesh_node_config_set,
+  },
   0x06 : {
     minimumPayloadLength : 0x02,
     name : 'mesh_node_provisioning_started',
@@ -257,6 +294,15 @@ Events[bgapiDefs.Classes.MeshNode] = {
     minimumPayloadLength : 0x02,
     name : 'mesh_node_provisioning_failed',
     handler : evt_generic_16bit_result_code,
+  },
+  0x08 : {
+    minimumPayloadLength : 0x05,
+    name : 'mesh_node_key_added',
+    handler : function(buffer) {
+      if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+        buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+      return {needsMoreBytes: 0, eatenBytes: 5, decodedPacket: { 'type': buffer.readUInt8(0), 'index' : buffer.readUInt16LE(1), 'netkey_index': buffer.readUInt16LE(3) } };
+    }
   },
 }
 
