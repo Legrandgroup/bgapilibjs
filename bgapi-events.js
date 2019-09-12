@@ -133,6 +133,33 @@ function evt_mesh_generic_client_server_status(buffer) {
 }
 
 /**
+ * @brief Decoding handler for event evt_gatt_server_user_write_request
+ * @param buffer A buffer containing the payload to decode associated with this message
+ * @return A JSON object containing the decoded event
+ *
+ * @note In the returned JSON object, the parameters entry is an object of type Buffer
+**/
+function evt_gatt_server_user_write_request(buffer) {
+  if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+    buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+  console.log('evt_gatt_server_user_write_request got a buffer: ' + buffer.toString('hex'));
+  let connection = buffer.readUInt8(0);
+  let characteristic = buffer.readUInt16LE(1);
+  let attOpcode = buffer.readUInt8(3);
+  let offset = buffer.readUInt16LE(4);
+  let parametersLen = buffer.readUInt8(6);
+  parameters = buffer.slice(7, 7 + parametersLen);
+  let result = {
+    'connection': connection,
+    'characteristic': characteristic,
+    'att_opcode': attOpcode,
+    'offset': offset,
+    'parameters': parameters,
+  }
+  return {needsMoreBytes: 0, eatenBytes: 7+parametersLen, decodedPacket: result};
+}
+
+/**
  * @brief Generic decoding handler for events carrying only one 16-bit result code
  * @param buffer A buffer containing the payload to decode associated with this message
  * @return A JSON object containing the decoded event
@@ -246,6 +273,23 @@ Events[bgapiDefs.Classes.BluetoothMeshGenericClientModel] = {
     minimumPayloadLength : 0x10,
     name : 'mesh_generic_client_server_status',
     handler : evt_mesh_generic_client_server_status,
+  },
+}
+
+Events[bgapiDefs.Classes.GenericAttributeProfileServer] = {
+  0x02 : {
+    minimumPayloadLength : 0x7,
+    name : 'gatt_server_user_write_request',
+    handler : evt_gatt_server_user_write_request,
+  },
+  0x03 : {
+    minimumPayloadLength : 0x6,
+    name : 'gatt_server_characteristic_status',
+    handler : function(buffer) {
+      if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+        buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+      return {needsMoreBytes: 0, eatenBytes: 6, decodedPacket: { 'connection': buffer.readUInt8(0), 'characteristic': buffer.readUInt16LE(1), 'status_flags': buffer.readUInt8(3), 'client_config_flags': buffer.readUInt16LE(4) } };
+    }
   },
 }
 

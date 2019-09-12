@@ -204,6 +204,23 @@ bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x14, 0x1E, 0x00, 0x02, 0x13, 0x00
 );
 assert(callbackExecuted, 'Expected a call to callback function');
 
+console.log('=== Testing evt_gatt_server_user_write_request');
+callbackExecuted = false;
+bgapi.resetParser();
+bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x0E, 0x0A, 0x02, 0x01, 0x13, 0x00, 0x52, 0x00, 0x00, 0x07, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00]), function(err, packet, nbMoreBytesNeeded) {
+        callbackExecuted = true;
+        console.log('Running callback for evt_gatt_server_user_write_request');
+        console.log(packet);
+        assert(packet.connection == 0x01, 'Error on decoded connection');
+        assert(packet.characteristic == 0x0013, 'Error on decoded characteristic');
+        assert(packet.att_opcode == 0x52, 'Error on decoded att_opcode');
+        assert(packet.offset == 0x0000, 'Error on decoded offset');
+        assert(Buffer.from([0x03, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00]).equals(packet.parameters), 'Error on decoded parameters (buffer)');
+        assert(!err, "Expected no error");
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');
+
 console.log('=== Testing that messageId is set in result for rsp_flash_ps_erase_all');
 callbackExecuted = false;
 bgapi.resetParser();
