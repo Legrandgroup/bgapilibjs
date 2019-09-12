@@ -145,6 +145,23 @@ bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00
 );
 assert(callbackExecuted, 'Expected a call to callback function');
 
+console.log('=== Testing evt_le_connection_opened');
+callbackExecuted = false;
+bgapi.resetParser();
+bgapi.parseIncomingIterate(Buffer.from([0xA0, 0x0B, 0x08, 0x00, 0xAB, 0xF4, 0x61, 0x31, 0xF6, 0x4F, 0x01, 0x00, 0x01, 0xFF, 0x04]), function(err, packet, nbMoreBytesNeeded) {
+        callbackExecuted = true;
+        console.log('Running callback for evt_le_connection_opened');
+        assert(packet.address == '4f:f6:31:61:f4:ab', 'Error on decoded address');
+        assert(packet.address_type == 0x01, 'Error on decoded address_type');
+        assert(packet.master == 0x00, 'Error on decoded master');
+        assert(packet.connection == 0x01, 'Error on decoded connection');
+        assert(packet.bonding == 0xFF, 'Error on decoded connection');
+        assert(packet.advertiser == 0x04, 'Error on decoded connection');
+        assert(!err, "Expected no error");
+    }
+);
+assert(callbackExecuted, 'Expected a call to callback function');
+
 console.log('=== Testing evt_mesh_generic_server_client_request');
 callbackExecuted = false;
 bgapi.resetParser();

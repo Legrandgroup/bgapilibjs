@@ -12,6 +12,7 @@ const MessageTypes = {
 **/
 const Classes = {
   System : 0x01,
+  ConnectionManagement : 0x08,
   PersitentStore : 0x0d,
   MeshNode : 0x14,
   GenericAttributeProfileServer : 0x0a,
@@ -24,6 +25,7 @@ const Classes = {
 **/
 const PrefixToClass = {
   'system' : Classes.System,
+  'le_connection' : Classes.ConnectionManagement,
   'flash_ps' : Classes.PersitentStore,
   'mesh_node' : Classes.MeshNode,
   'mesh_generic_client' : Classes.BluetoothMeshGenericClientModel,

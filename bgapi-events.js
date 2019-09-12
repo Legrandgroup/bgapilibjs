@@ -1,4 +1,6 @@
 const bgapiDefs = require('./bgapi-defs.js');
+const bgapiErrors = require('./bgapi-errors.js');
+const bgapiUtils = require('./bgapi-utils.js');
 
 /**
  * @brief Decoding handler for event evt_system_boot
@@ -26,6 +28,38 @@ function evt_system_boot(buffer) {
     'hash': versionHash,
   }
   return {needsMoreBytes: 0, eatenBytes: 18, decodedPacket: result};
+}
+
+/**
+ * @brief Decoding handler for event evt_le_connection_opened
+ * @param buffer A buffer containing the payload to decode associated with this message
+ * @return A JSON object containing the decoded event
+**/
+function evt_le_connection_opened(buffer) {
+  if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+    buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+  console.log('evt_le_connection_opened got a buffer: ' + buffer.toString('hex'));
+  let btAddressAsStr = '';
+  for (const b of buffer.subarray(0, 6)) {
+    if (btAddressAsStr)
+      btAddressAsStr = bgapiUtils.UInt8ToHexStr(b) + ':' + btAddressAsStr;  /* Prepend the byte (because buffer is in the reverse order in BGAPI */
+    else
+      btAddressAsStr = bgapiUtils.UInt8ToHexStr(b); /* Only first byte */
+  }
+  let addressType = buffer.readUInt8(6);
+  let master = buffer.readUInt8(7);
+  let connection = buffer.readUInt8(8);
+  let bonding = buffer.readUInt8(9);
+  let advertiser = buffer.readUInt8(10);
+  let result = {
+    'address': btAddressAsStr,
+    'address_type': addressType,
+    'master': master,
+    'connection': connection,
+    'bonding': bonding,
+    'advertiser': advertiser,
+  };
+  return {needsMoreBytes: 0, eatenBytes: 11, decodedPacket: result};
 }
 
 /**
@@ -130,6 +164,42 @@ Events[bgapiDefs.Classes.System] = {
     name : 'system_boot',
     handler : evt_system_boot,
   }
+}
+
+Events[bgapiDefs.Classes.ConnectionManagement] = {
+  0x00 : {
+    minimumPayloadLength : 0x0b,
+    name : 'le_connection_opened',
+    handler : evt_le_connection_opened,
+  },
+  0x01 : {
+    minimumPayloadLength : 0x03,
+    name : 'le_connection_closed',
+    handler : function(buffer) {
+      if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+        buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+      return {needsMoreBytes: 0, eatenBytes: 3, decodedPacket: { 'result': bgapiErrors.errorCodes[buffer.readUInt16LE(0)], 'connection': buffer.readUInt8(2) } };
+    }
+  },
+  0x02 : {
+    minimumPayloadLength : 0x0a,
+    name : 'le_connection_parameters',
+    handler : function(buffer) {
+      if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+        buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+      return {needsMoreBytes: 0, eatenBytes: 10, decodedPacket: { 'connection': buffer.readUInt8(0), 'interval': buffer.readUInt16LE(1), 'latency': buffer.readUInt16LE(3),
+                                                                  'timeout': buffer.readUInt16LE(5), 'security_mode': buffer.readUInt8(7), 'txsize': buffer.readUInt16LE(8) } };
+    }
+  },
+  0x04 : {
+    minimumPayloadLength : 0x02,
+    name : 'le_connection_phy_status',
+    handler : function(buffer) {
+      if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+        buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+      return {needsMoreBytes: 0, eatenBytes: 2, decodedPacket: { 'connection': buffer.readUInt8(0), 'phy' : buffer.readUInt8(1) } };
+    }
+  },
 }
 
 Events[bgapiDefs.Classes.MeshNode] = {
