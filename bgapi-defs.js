@@ -16,6 +16,7 @@ const Classes = {
   PersitentStore : 0x0d,
   MeshNode : 0x14,
   GenericAttributeProfileServer : 0x0a,
+  BluetoothMeshHealthServerModel : 0x1b,
   BluetoothMeshGenericClientModel : 0x1e,
   BluetoothMeshGenericServerModel : 0x1f,
 }
@@ -28,6 +29,7 @@ const PrefixToClass = {
   'le_connection' : Classes.ConnectionManagement,
   'flash_ps' : Classes.PersitentStore,
   'mesh_node' : Classes.MeshNode,
+  'mesh_health_server' : Classes.BluetoothMeshHealthServerModel,
   'mesh_generic_client' : Classes.BluetoothMeshGenericClientModel,
   'mesh_generic_server' : Classes.BluetoothMeshGenericServerModel,
   'gatt_server' : Classes.GenericAttributeProfileServer,

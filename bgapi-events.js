@@ -260,6 +260,18 @@ Events[bgapiDefs.Classes.MeshNode] = {
   },
 }
 
+Events[bgapiDefs.Classes.BluetoothMeshHealthServerModel] = {
+  0x00 : {
+    minimumPayloadLength : 0x3,
+    name : 'mesh_health_server_attention',
+    handler : function(buffer) {
+      if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+        buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+      return {needsMoreBytes: 0, eatenBytes: 3, decodedPacket: { 'elem_index': buffer.readUInt16LE(0), 'timer': buffer.readUInt8(2) } };
+    }
+  },
+}
+
 Events[bgapiDefs.Classes.BluetoothMeshGenericServerModel] = {
   0x00 : {
     minimumPayloadLength : 0x14,
