@@ -19,7 +19,7 @@ bgapilibjs only parses BGAPI frames that are recevied from a BGAPI modem or forg
 
 Therfore, you will need to use an third party library to read/write from/to the serial port.
 
-Here is a small example on how to do this using the Javascript library serialport:
+Here is a small example on how to do this using the Javascript library [serialport](https://serialport.io):
 ```
 const SerialPort = require('serialport');
 const BgApi = require('bgapilib');
