@@ -264,6 +264,18 @@ Events[bgapiDefs.Classes.ConnectionManagement] = {
   },
 }
 
+Events[bgapiDefs.Classes.GenericAttributeProfile] = {
+  0x00 : {
+    minimumPayloadLength : 0x03,
+    name : 'gatt_mtu_exchanged',
+    handler : function(buffer) {
+      if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+        buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+      return {needsMoreBytes: 0, eatenBytes: 3, decodedPacket: { 'connection': buffer.readUInt8(0), 'mtu': buffer.readUInt16LE(1) } };
+    }
+  },
+}
+
 Events[bgapiDefs.Classes.MeshNode] = {
   0x00 : {
     minimumPayloadLength : 0x07,
@@ -314,6 +326,15 @@ Events[bgapiDefs.Classes.MeshNode] = {
       if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
         buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
       return {needsMoreBytes: 0, eatenBytes: 5, decodedPacket: { 'type': buffer.readUInt8(0), 'index' : buffer.readUInt16LE(1), 'netkey_index': buffer.readUInt16LE(3) } };
+    }
+  },
+  0x09 : {
+    minimumPayloadLength : 0x07,
+    name : 'mesh_node_model_config_changed',
+    handler : function(buffer) {
+      if (typeof buffer == 'number')  /* apply() method invoked on handler changes buffer into a serie of byte arguments */
+        buffer = Buffer.from(arguments);  /* if this is the case, convert arguments back to a Buffer object to be able to process it */
+      return {needsMoreBytes: 0, eatenBytes: 7, decodedPacket: { 'mesh_node_config_state': buffer.readUInt8(0), 'element_address' : buffer.readUInt16LE(1), 'vendor_id': buffer.readUInt16LE(3), 'model_id': buffer.readUInt16LE(5) } };
     }
   },
 }
@@ -371,6 +392,7 @@ Events[bgapiDefs.Classes.GenericAttributeProfileServer] = {
   0x02 : {
     minimumPayloadLength : 0x7,
     name : 'gatt_server_user_write_request',
+
     handler : evt_gatt_server_user_write_request,
   },
   0x03 : {

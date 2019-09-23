@@ -77,6 +77,7 @@ const Commands = {
   },
   'gatt_server_write_attribute_value' : {
     id : 0x02,
+    classId : bgapiDefs.Classes.GenericAttributeProfileServer,
     minimumPayloadLength : 5,
     handler : cmd_gatt_server_write_attribute_value,
   },
